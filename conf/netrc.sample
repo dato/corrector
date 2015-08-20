@@ -1,0 +1,6 @@
+# Este fichero debería copiarse a $HOME/.netrc del usuario que ejecute
+# fetchmail.
+
+machine imap.gmail.com login tps.7541rw@gmail.com password PASSWORD
+
+# vi:nobackup:noswapfile:ft=netrc
