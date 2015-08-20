@@ -133,12 +133,12 @@ def guess_tp(subject):
 
   Por ejemplo, ‘tp0’ o ‘pila’.
   """
-  candidates = set(x.lower() for x in os.listdir(SKEL_DIR))
+  candidates = {x.lower(): x for x in os.listdir(SKEL_DIR)}
   subj_words = [x.lower() for x in re.split(r"[^_\w]+", subject)]
 
   for word in subj_words:
     if word in candidates:
-      return word
+      return candidates[word]
 
   raise ErrorAlumno("no se encontró nombre del TP en el asunto")
 
