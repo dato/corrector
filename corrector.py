@@ -33,6 +33,7 @@ import datetime
 import email
 import email.message
 import email.policy
+import email.utils
 import io
 import mimetypes
 import os
@@ -86,6 +87,12 @@ def main():
 def procesar_entrega(msg):
   """Recibe el mensaje del alumno y lanza el proceso de corrección.
   """
+  _, addr_from = email.utils.parseaddr(msg["From"])
+
+  if addr_from == GMAIL_ACCOUNT:
+    sys.stderr.write("Ignorando email de {}".format(GMAIL_ACCOUNT))
+    return
+
   tp_id = guess_tp(msg['Subject'])
   zip_obj = find_zip(msg)
 
@@ -179,7 +186,7 @@ def add_from_zip(tar_obj, zip_obj, skiplist=()):
   zip_files = zip_obj.namelist()
   strip_len = 0
 
-  if not zip_obj.namelist():
+  if not zip_files:
     raise ErrorAlumno("archivo ZIP vacío")
 
   if (zip_files[0].endswith("/") and
@@ -226,6 +233,7 @@ def send_reply(orig_msg, reply_text):
   xoauth2_tok = "user=%s\1" "auth=Bearer %s\1\1" % (GMAIL_ACCOUNT,
                                                     creds.access_token)
   xoauth2_b64 = base64.b64encode(xoauth2_tok.encode("ascii")).decode("ascii")
+
   server = smtplib.SMTP("smtp.gmail.com", 587)
   server.ehlo()
   server.starttls()
