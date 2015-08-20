@@ -218,6 +218,10 @@ def send_reply(orig_msg, reply_text):
   reply["Subject"] = "Re: " + orig_msg["Subject"]
   reply["In-Reply-To"] = orig_msg["Message-ID"]
 
+  # Poniendo en copia a la cuenta del corrector se consigue que sus respuestas
+  # pasen de nuevo los filtros de Gmail y se reenvíen al ayudante apropiado.
+  reply["Bcc"] = GMAIL_ACCOUNT
+
   creds = get_oauth_credentials()
   xoauth2_tok = "user=%s\1" "auth=Bearer %s\1\1" % (GMAIL_ACCOUNT,
                                                     creds.access_token)
