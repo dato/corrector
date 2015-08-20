@@ -37,6 +37,7 @@ import email.utils
 import io
 import mimetypes
 import os
+import re
 import smtplib
 import subprocess
 import sys
@@ -133,7 +134,7 @@ def guess_tp(subject):
   Por ejemplo, ‘tp0’ o ‘pila’.
   """
   candidates = set(x.lower() for x in os.listdir(SKEL_DIR))
-  subj_words = [x.lower() for x in subject.split()]
+  subj_words = [x.lower() for x in re.split(r"[^_\w]+", subject)]
 
   for word in subj_words:
     if word in candidates:
