@@ -245,25 +245,19 @@ def send_reply(orig_msg, reply_text):
 
 
 def get_oauth_credentials():
-  """Devuelve nuestras credenciales OAuth, refrescándolas si es preciso.
+  """Refresca y devuelve nuestras credenciales OAuth.
   """
-  global _CREDS  # pylint: disable=global-statement
+  # N.B.: siempre re-generamos el token de acceso porque este script es
+  # stateless y no guarda las credenciales en ningún sitio. Todo bien con eso
+  # mientras no alcancemos el límite de refresh() de Google (pero no publican
+  # cuál es).
+  creds = oauth2client.client.OAuth2Credentials(
+      "", CLIENT_ID, CLIENT_SECRET, OAUTH_REFRESH_TOKEN,
+      datetime.datetime(2015, 1, 1),
+      "https://accounts.google.com/o/oauth2/token", "corrector/1.0")
 
-  if _CREDS is None:
-    _CREDS = oauth2client.client.OAuth2Credentials(
-        "", CLIENT_ID, CLIENT_SECRET, OAUTH_REFRESH_TOKEN,
-        datetime.datetime(2015, 1, 1),
-        "https://accounts.google.com/o/oauth2/token", "corrector/1.0")
-
-  now = datetime.datetime.utcnow()
-  valid_until = _CREDS.token_expiry - datetime.timedelta(minutes=5)
-
-  if valid_until < now:
-    _CREDS.refresh(httplib2.Http())
-
-  return _CREDS
-
-_CREDS = None
+  creds.refresh(httplib2.Http())
+  return creds
 
 ##
 
