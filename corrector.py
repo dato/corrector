@@ -198,6 +198,7 @@ def add_from_zip(tar_obj, zip_obj, skiplist=()):
 
   for fname in zip_files:
     arch_name = os.path.normpath(fname[strip_len:])
+    # TODO(dato): mover el cleanup de *.o al Makefile.
     if fname.endswith(".o") or arch_name in skiplist:
       continue
     if arch_name.startswith("/") or ".." in arch_name:
@@ -205,8 +206,10 @@ def add_from_zip(tar_obj, zip_obj, skiplist=()):
     zinfo = zip_obj.getinfo(fname)
     tinfo = tarfile.TarInfo(arch_name)
     tinfo.size = zinfo.file_size
-    tinfo.type = (tarfile.REGTYPE if not fname.endswith("/")
-                  else tarfile.DIRTYPE)
+    if fname.endswith("/"):
+      tinfo.type, tinfo.mode = tarfile.DIRTYPE, 0o755
+    else:
+      tinfo.type, tinfo.mode = tarfile.REGTYPE, 0o644
     tar_obj.addfile(tinfo, zip_obj.open(fname))
 
 
