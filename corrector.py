@@ -190,11 +190,11 @@ def add_from_zip(tar_obj, zip_obj, skiplist=()):
   if not zip_files:
     raise ErrorAlumno("archivo ZIP vacío")
 
-  if (zip_files[0].endswith("/") and
-      all(x.startswith(zip_files[0]) for x in zip_files)):
-    # En ese caso, ignoramos el prefijo (el directorio) de todos los archivos.
-    strip_len = len(zip_files[0])
-    zip_files.pop(0)
+  # Ignorar el directorio si solo hay uno de primer nivel.
+  dirname = os.path.dirname(zip_files[0])
+
+  if dirname and all(x.startswith(dirname + "/") for x in zip_files):
+    strip_len = len(dirname) + 1
 
   for fname in zip_files:
     arch_name = os.path.normpath(fname[strip_len:])
