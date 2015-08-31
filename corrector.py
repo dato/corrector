@@ -60,6 +60,12 @@ CLIENT_ID = os.environ.get("CORRECTOR_OAUTH_CLIENT")
 CLIENT_SECRET = os.environ.get("CORRECTOR_OAUTH_SECRET")
 OAUTH_REFRESH_TOKEN = os.environ.get("CORRECTOR_REFRESH_TOKEN")
 
+# Nunca respondemos a mail enviado por estas direcciones.
+IGNORE_ADDRESSES = {
+    GMAIL_ACCOUNT,                   # Mail de nosotros mismos.
+    "no-reply@accounts.google.com",  # Notificaciones sobre la contraseña.
+}
+
 
 class ErrorInterno(Exception):
   """Excepción para cualquier error interno en el programa.
@@ -90,7 +96,7 @@ def procesar_entrega(msg):
   """
   _, addr_from = email.utils.parseaddr(msg["From"])
 
-  if addr_from == GMAIL_ACCOUNT:
+  if addr_from in IGNORE_ADDRESSES:
     sys.stderr.write("Ignorando email de {}".format(GMAIL_ACCOUNT))
     return
 
