@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #define DOCKER_IMAGE "corrector/worker"
+#define MEM_LIM "256m"
 
 /* El wrapper pasa los argumentos que recibe al worker. Por eso esta lista
  * estática la convertimos a dinámica con memcpy() en main().
@@ -16,6 +17,7 @@
 static const char *const baseCmd[] = {
   "docker", "run", "--rm", "--interactive",
   "--net", "none", "--env", "LANG=C.UTF-8",
+  "--memory", MEM_LIM, "--memory-swap", MEM_LIM,
   "--user", "nobody:nogroup", DOCKER_IMAGE,
 };
 
