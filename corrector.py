@@ -24,9 +24,9 @@ El workflow es:
 Salida:
 
   - un mensaje al alumno con los resultados. Se envía desde GMAIL_ACCOUNT.
-"""
 
-# TODO(dato): guardar las entregas en un directorio para pasarles Moss.
+  - se guarda una copia de los archivos en DATA_DIR/<TP_ID>/<PADRON>.
+"""
 
 import base64
 import datetime
@@ -38,6 +38,7 @@ import io
 import mimetypes
 import os
 import re
+import shutil
 import smtplib
 import subprocess
 import sys
@@ -49,6 +50,7 @@ import oauth2client.client
 
 ROOT_DIR = os.environ["CORRECTOR_ROOT"]
 SKEL_DIR = os.path.join(ROOT_DIR, os.environ["CORRECTOR_SKEL"])
+DATA_DIR = os.path.join(ROOT_DIR, os.environ["CORRECTOR_TPS"])
 WORKER_BIN = os.path.join(ROOT_DIR, os.environ["CORRECTOR_WORKER"])
 
 MAX_ZIP_SIZE = 1024 * 1024  # 1 MiB
@@ -113,6 +115,12 @@ def procesar_entrega(msg):
   skel_dir = os.path.join(SKEL_DIR, tp_id)
   skel_files = set()
 
+  # Crear el directorio donde guardaremos la copia para Moss.
+  # TODO(dato): no es óptimo usar aquí el padrón porque puede haber errores
+  # tipográficos.
+  moss_dest_dir = os.path.join(DATA_DIR, tp_id, str(padron))
+  os.makedirs(moss_dest_dir, 0o755, exist_ok=True)
+
   tar = tarfile.open(fileobj=worker.stdin, mode="w|")
 
   # Añadir al archivo TAR la base del TP (skel_dir).
@@ -136,6 +144,11 @@ def procesar_entrega(msg):
       info.type, info.mode = tarfile.REGTYPE, 0o644
 
     tar.addfile(info, zip_obj.open(zip_info.filename))
+
+    # Guardar una copia del código para Moss.
+    if path.endswith(".c") and not "/" in path:
+      with open(os.path.join(moss_dest_dir, path), "wb") as f:
+        shutil.copyfileobj(zip_obj.open(zip_info.filename), f)
 
   tar.close()
 
