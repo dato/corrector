@@ -55,11 +55,12 @@ WORKER_BIN = os.path.join(ROOT_DIR, os.environ["CORRECTOR_WORKER"])
 
 MAX_ZIP_SIZE = 1024 * 1024  # 1 MiB
 
-# Si estas variables no están definidas, el mail no se envía sino que se imprime
-# por pantalla.
 GMAIL_ACCOUNT = os.environ.get("CORRECTOR_ACCOUNT")
 CLIENT_ID = os.environ.get("CORRECTOR_OAUTH_CLIENT")
 CLIENT_SECRET = os.environ.get("CORRECTOR_OAUTH_SECRET")
+
+# Si OAUTH_REFRESH_TOKEN no está definido, el mail se imprime por pantalla y no
+# se envía.
 OAUTH_REFRESH_TOKEN = os.environ.get("CORRECTOR_REFRESH_TOKEN")
 
 # Nunca respondemos a mail enviado por estas direcciones.
@@ -254,7 +255,7 @@ def zip_walk(zip_obj, strip_toplevel=True):
 def send_reply(orig_msg, reply_text):
   """Envía una cadena de texto como respuesta a un correo recibido.
   """
-  if not GMAIL_ACCOUNT:
+  if not OAUTH_REFRESH_TOKEN:
     print("ENVIARÍA: {}".format(reply_text))
     return
 
