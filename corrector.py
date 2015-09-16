@@ -84,6 +84,8 @@ def main():
 
   El flujo de la corrección se corta lanzando excepciones ErrorAlumno.
   """
+  os.umask(0o027)
+
   msg = email.message_from_binary_file(sys.stdin.buffer,
                                        policy=email.policy.default)
   try:
