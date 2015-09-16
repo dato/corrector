@@ -101,6 +101,7 @@ def procesar_entrega(msg):
     return
 
   tp_id = guess_tp(msg["Subject"])
+  padron = get_padron(msg["Subject"])
   zip_obj = find_zip(msg)
 
   # Lanzar ya el proceso worker para poder pasar su stdin a tarfile.open().
@@ -147,6 +148,18 @@ def guess_tp(subject):
       return candidates[word]
 
   raise ErrorAlumno("no se encontró nombre del TP en el asunto")
+
+
+def get_padron(subject):
+  """Devuelve como entero el número de padrón de una entrega.
+  """
+  subject = subject.replace(".", "")
+  match = re.search(r"(\d{5,})", subject)
+
+  if match is not None:
+    return int(match.group(1))
+
+  raise ErrorAlumno("no se encontró el número de padrón en el asunto")
 
 
 def find_zip(msg):
