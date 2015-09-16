@@ -100,7 +100,7 @@ def procesar_entrega(msg):
     sys.stderr.write("Ignorando email de {}".format(GMAIL_ACCOUNT))
     return
 
-  tp_id = guess_tp(msg['Subject'])
+  tp_id = guess_tp(msg["Subject"])
   zip_obj = find_zip(msg)
 
   # Lanzar ya el proceso worker para poder pasar su stdin a tarfile.open().
@@ -170,7 +170,7 @@ def find_zip(msg):
     else:
       extension = mimetypes.guess_extension(content_type)
 
-    if extension and extension.lower() == '.zip':
+    if extension and extension.lower() == ".zip":
       zipbytes = part.get_payload(decode=True)
       if len(zipbytes) > MAX_ZIP_SIZE:
         raise ErrorAlumno(
@@ -248,7 +248,7 @@ def send_reply(orig_msg, reply_text):
   server.ehlo()
   server.starttls()
   server.ehlo()  # Se necesita EHLO de nuevo tras STARTTLS.
-  server.docmd('AUTH', 'XOAUTH2 ' + xoauth2_b64)
+  server.docmd("AUTH", "XOAUTH2 " + xoauth2_b64)
   server.send_message(reply)
   server.close()
 
