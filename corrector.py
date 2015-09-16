@@ -124,7 +124,19 @@ def procesar_entrega(msg):
       tar.add(full_path, arch_path)
 
   # A continuación añadir los archivos de la entrega (ZIP).
-  add_from_zip(tar, zip_obj, skiplist=skel_files)
+  for path, zip_info in zip_walk(zip_obj):
+    if path in skel_files or path.endswith(".o"):
+      continue
+
+    info = tarfile.TarInfo(path)
+    info.size = zip_info.file_size
+    if path.endswith("/"):
+      info.type, info.mode = tarfile.DIRTYPE, 0o755
+    else:
+      info.type, info.mode = tarfile.REGTYPE, 0o644
+
+    tar.addfile(info, zip_obj.open(zip_info.filename))
+
   tar.close()
 
   stdout, _ = worker.communicate()
@@ -193,43 +205,37 @@ def find_zip(msg):
   raise ErrorAlumno("no se encontró un archivo ZIP en el mensaje")
 
 
-def add_from_zip(tar_obj, zip_obj, skiplist=()):
-  """Reliza la unión de los archivos base de un TP con la entrega.
+def zip_walk(zip_obj, strip_toplevel=True):
+  """Itera sobre los archivos de un zip.
 
   Args:
-    - tar: un objeto tarfile.TarFile abierto en modo escritura
     - zip_obj: un objeto zipfile.ZipFile abierto en modo lectura
-    - skiplist: archivos a ignorar si están presentes en el ZIP
+    - skip_toplevel: un booleano que indica si a los nombres de archivos se les
+          debe quitar el nombre de directorio común (si lo hubiese)
+
+  Yields:
+    - tuplas (nombre_archivo, zipinfo_object).
   """
-  # Comprobar primero si los contenidos del ZIP están todos en un mismo
-  # directorio.
   zip_files = zip_obj.namelist()
   strip_len = 0
 
   if not zip_files:
     raise ErrorAlumno("archivo ZIP vacío")
 
-  # Ignorar el directorio si solo hay uno de primer nivel.
-  dirname = os.path.dirname(zip_files[0])
+  # Comprobar si los contenidos del ZIP están todos en un mismo directorio.
+  candidate = os.path.dirname(zip_files[0])
+  toplevel_unique = (candidate and all(x.startswith(candidate + "/")
+                                       for x in zip_files))
 
-  if dirname and all(x.startswith(dirname + "/") for x in zip_files):
-    strip_len = len(dirname) + 1
+  if strip_toplevel and toplevel_unique:
+    strip_len = len(candidate) + 1
 
   for fname in zip_files:
     arch_name = os.path.normpath(fname[strip_len:])
-    # TODO(dato): mover el cleanup de *.o al Makefile.
-    if fname.endswith(".o") or arch_name in skiplist:
-      continue
     if arch_name.startswith("/") or ".." in arch_name:
       raise ErrorAlumno("ruta no aceptada: {} ({})".format(fname, arch_name))
-    zinfo = zip_obj.getinfo(fname)
-    tinfo = tarfile.TarInfo(arch_name)
-    tinfo.size = zinfo.file_size
-    if fname.endswith("/"):
-      tinfo.type, tinfo.mode = tarfile.DIRTYPE, 0o755
     else:
-      tinfo.type, tinfo.mode = tarfile.REGTYPE, 0o644
-    tar_obj.addfile(tinfo, zip_obj.open(fname))
+      yield arch_name, zip_obj.getinfo(fname)
 
 
 def send_reply(orig_msg, reply_text):
