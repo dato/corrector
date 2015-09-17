@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #define DOCKER_IMAGE "corrector/worker"
-#define MEM_LIM "256m"
+#define MEM_LIM "512m"
 
 /* El wrapper pasa los argumentos que recibe al worker. Por eso esta lista
  * estática la convertimos a dinámica con memcpy() en main().
