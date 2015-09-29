@@ -124,7 +124,7 @@ def procesar_entrega(msg):
   moss_dest_dir = os.path.join(DATA_DIR, tp_id, str(padron))
   os.makedirs(moss_dest_dir, 0o755, exist_ok=True)
 
-  tar = tarfile.open(fileobj=worker.stdin, mode="w|")
+  tar = tarfile.open(fileobj=worker.stdin, mode="w|", dereference=True)
 
   # Añadir al archivo TAR la base del TP (skel_dir).
   for path, _, filenames in os.walk(skel_dir):
