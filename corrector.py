@@ -242,13 +242,12 @@ def zip_walk(zip_obj, strip_toplevel=True):
     raise ErrorAlumno("archivo ZIP vacío")
 
   # Comprobar si los contenidos del ZIP están todos en un mismo directorio.
-  candidate = os.path.dirname(zip_files[0]) + "/"
-  toplevel_unique = all(x.startswith(candidate) for x in zip_files)
+  candidate = zip_files[0].rstrip("/") + "/"
+  toplevel_unique = all(x.startswith(candidate) for x in zip_files[1:])
 
   if strip_toplevel and toplevel_unique:
+    zip_files.pop(0)
     strip_len = len(candidate)
-    if zip_files[0] == candidate:
-      zip_files.pop(0)
 
   for fname in zip_files:
     arch_name = os.path.normpath(fname[strip_len:])
