@@ -102,7 +102,7 @@ def procesar_entrega(msg):
   _, addr_from = email.utils.parseaddr(msg["From"])
 
   if addr_from in IGNORE_ADDRESSES:
-    sys.stderr.write("Ignorando email de {}".format(GMAIL_ACCOUNT))
+    sys.stderr.write("Ignorando email de {}\n".format(GMAIL_ACCOUNT))
     return
 
   tp_id = guess_tp(msg["Subject"])
