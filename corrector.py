@@ -219,7 +219,11 @@ def find_zip(msg):
       if len(zipbytes) > MAX_ZIP_SIZE:
         raise ErrorAlumno(
             "archivo ZIP demasiado grande ({} bytes)".format(len(zipbytes)))
-      return zipfile.ZipFile(io.BytesIO(zipbytes))
+      try:
+        return zipfile.ZipFile(io.BytesIO(zipbytes))
+      except zipfile.BadZipFile as ex:
+        raise ErrorAlumno("no se pudo abrir el archivo {} ({} bytes): {}"
+                          .format(filename, len(zipbytes), ex))
 
   raise ErrorAlumno("no se encontró un archivo ZIP en el mensaje")
 
