@@ -247,7 +247,8 @@ def zip_walk(zip_obj, strip_toplevel=True):
 
   # Comprobar si los contenidos del ZIP están todos en un mismo directorio.
   candidate = zip_files[0].rstrip("/") + "/"
-  toplevel_unique = all(x.startswith(candidate) for x in zip_files[1:])
+  toplevel_unique = (len(zip_files) > 1 and
+                     all(x.startswith(candidate) for x in zip_files[1:]))
 
   if strip_toplevel and toplevel_unique:
     zip_files.pop(0)
