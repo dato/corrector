@@ -136,7 +136,7 @@ def procesar_entrega(msg):
 
   # A continuación añadir los archivos de la entrega (ZIP).
   for path, zip_info in zip_walk(zip_obj):
-    if path in skel_files or path.endswith(".o"):
+    if path in skel_files:
       continue
     if path in {"makefile", "GNUmakefile"}:
       raise ErrorAlumno(
