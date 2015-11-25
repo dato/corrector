@@ -106,7 +106,7 @@ def procesar_entrega(msg):
     return
 
   tp_id = guess_tp(msg["Subject"])
-  padron = get_padron(msg["Subject"])
+  padron = get_padron_str(msg["Subject"])
   zip_obj = find_zip(msg)
 
   # Lanzar ya el proceso worker para poder pasar su stdin a tarfile.open().
@@ -121,7 +121,7 @@ def procesar_entrega(msg):
   # Crear el directorio donde guardaremos la copia para Moss.
   # TODO(dato): no es óptimo usar aquí el padrón porque puede haber errores
   # tipográficos.
-  moss_dest_dir = os.path.join(DATA_DIR, tp_id, str(padron))
+  moss_dest_dir = os.path.join(DATA_DIR, tp_id, padron)
   os.makedirs(moss_dest_dir, 0o755, exist_ok=True)
 
   tar = tarfile.open(fileobj=worker.stdin, mode="w|", dereference=True)
@@ -181,14 +181,17 @@ def guess_tp(subject):
   raise ErrorAlumno("no se encontró nombre del TP en el asunto")
 
 
-def get_padron(subject):
-  """Devuelve como entero el número de padrón de una entrega.
+def get_padron_str(subject):
+  """Devuelve una cadena con el padrón, o padrones, de una entrega.
+
+  En el caso de entregas conjuntas, se devuelve PADRÓN1_PADRÓN2, con
+  PADRÓN1 < PADRÓN2.
   """
   subject = subject.replace(".", "")
-  match = re.search(r"(\d{5,})", subject)
+  matches = re.findall(r"\d{5,}", subject)
 
-  if match is not None:
-    return int(match.group(1))
+  if matches:
+    return "_".join(sorted(matches))
 
   raise ErrorAlumno("no se encontró el número de padrón en el asunto")
 
