@@ -141,7 +141,7 @@ def procesar_entrega(msg):
       continue
     if path in {"makefile", "GNUmakefile"}:
       raise ErrorAlumno(
-          "archivo {!r} no aceptado; solo 'Makefile'".format(path))
+          "archivo ‘{}’ no aceptado; solo ‘Makefile’".format(path))
 
     info = tarfile.TarInfo(path)
     info.size = zip_info.file_size
