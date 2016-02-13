@@ -43,6 +43,7 @@ import smtplib
 import subprocess
 import sys
 import tarfile
+import time
 import zipfile
 
 import httplib2
@@ -121,7 +122,7 @@ def procesar_entrega(msg):
   # Crear el directorio donde guardaremos la copia para Moss.
   # TODO(dato): no es óptimo usar aquí el padrón porque puede haber errores
   # tipográficos.
-  moss_dest_dir = os.path.join(DATA_DIR, tp_id, padron)
+  moss_dest_dir = os.path.join(DATA_DIR, tp_id, time.strftime("%Y"), padron)
   os.makedirs(moss_dest_dir, 0o755, exist_ok=True)
 
   tar = tarfile.open(fileobj=worker.stdin, mode="w|", dereference=True)
