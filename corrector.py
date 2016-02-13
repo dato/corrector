@@ -153,9 +153,10 @@ def procesar_entrega(msg):
     tar.addfile(info, zip_obj.open(zip_info.filename))
 
     # Guardar una copia del código para Moss.
-    if path.endswith(".c") and not "/" in path:
-      with open(os.path.join(moss_dest_dir, path), "wb") as f:
-        shutil.copyfileobj(zip_obj.open(zip_info.filename), f)
+    if path.endswith(".c"):
+      basename = path.replace("/", "_")
+      with open(os.path.join(moss_dest_dir, basename), "wb") as dest:
+        shutil.copyfileobj(zip_obj.open(zip_info.filename), dest)
 
   tar.close()
 
