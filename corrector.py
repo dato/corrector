@@ -258,9 +258,9 @@ def zip_walk(zip_obj, strip_toplevel=True):
     strip_len = len(candidate)
 
   for fname in zip_files:
-    arch_name = os.path.normpath(fname[strip_len:])
-    if arch_name.startswith("/") or ".." in arch_name:
-      raise ErrorAlumno("ruta no aceptada: {} ({})".format(fname, arch_name))
+    arch_name = fname[strip_len:]
+    if os.path.normpath(arch_name).startswith(("/", "../")):
+      raise ErrorAlumno("ruta no aceptada: {}".format(fname))
     else:
       yield arch_name, zip_obj.getinfo(fname)
 
