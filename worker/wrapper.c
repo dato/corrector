@@ -1,6 +1,6 @@
 /*
  * Setgid wrapper para worker.py. Ejecuta la imagen de Docker
- * como nobody:nogroup.
+ * como nobody:nogroup y sin capabilities.
  */
 
 #include <stdio.h>
@@ -18,7 +18,8 @@ static const char *const baseCmd[] = {
   "docker", "run", "--rm", "--interactive",
   "--net", "none", "--env", "LANG=C.UTF-8",
   "--memory", MEM_LIM, "--memory-swap", MEM_LIM,
-  "--user", "nobody:nogroup", DOCKER_IMAGE,
+  "--user", "nobody:nogroup", "--cap-drop", "ALL",
+  DOCKER_IMAGE,
 };
 
 int main(int argc, char *argv[]) {
@@ -26,7 +27,8 @@ int main(int argc, char *argv[]) {
   char *cmd[len + argc];
 
   memcpy(cmd, baseCmd, sizeof(baseCmd));
-  memcpy(cmd + len, argv + 1, argc * sizeof(char*)); // Copia argumentos + NULL.
+  memcpy(cmd + len, argv + 1,
+         (unsigned) argc * sizeof(char*)); // Copia argumentos + NULL.
 
   execv("/usr/bin/docker", cmd);
   perror("Error en execv()");
