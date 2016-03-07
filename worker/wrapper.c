@@ -8,7 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define DOCKER_IMAGE "corrector/worker"
+#define DOCKER_IMAGE "fiuba/corrector"
 #define MEM_LIM "512m"
 
 /* El wrapper pasa los argumentos que recibe al worker. Por eso esta lista
@@ -19,6 +19,7 @@ static const char *const baseCmd[] = {
   "--net", "none", "--env", "LANG=C.UTF-8",
   "--memory", MEM_LIM, "--memory-swap", MEM_LIM,
   "--user", "nobody:nogroup", "--cap-drop", "ALL",
+  "--read-only", "--tmpfs", "/tmp:exec,size=75M",
   DOCKER_IMAGE,
 };
 
