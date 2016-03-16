@@ -55,6 +55,7 @@ DATA_DIR = os.path.join(ROOT_DIR, os.environ["CORRECTOR_TPS"])
 WORKER_BIN = os.path.join(ROOT_DIR, os.environ["CORRECTOR_WORKER"])
 
 MAX_ZIP_SIZE = 1024 * 1024  # 1 MiB
+PADRON_REGEX = re.compile(r"\b(SP\d+|CBC\d+|\d{5,})\b")
 
 GMAIL_ACCOUNT = os.environ.get("CORRECTOR_ACCOUNT")
 CLIENT_ID = os.environ.get("CORRECTOR_OAUTH_CLIENT")
@@ -190,7 +191,7 @@ def get_padron_str(subject):
   PADRÓN1 < PADRÓN2.
   """
   subject = subject.replace(".", "")
-  matches = re.findall(r"\d{5,}", subject)
+  matches = PADRON_REGEX.findall(subject)
 
   if matches:
     return "_".join(sorted(matches))
