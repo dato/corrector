@@ -24,7 +24,7 @@ fi
 #
 # `cd $TP_DIR` helps with the above by keeping the command line short.
 #
-cd "$TP_DIR" && find . -name '0*' -type d -prune -o \
+cd "$TP_DIR" && find . -name '0*' -type d -prune -o  \
      -type f -name '*.c' -not -name '__MAC*' -print0 |
   xargs -0n 1000000000 $MOSS -d -l c -c "TDA $TP ($(date +%Y-%m-%d))"
 
