@@ -67,6 +67,7 @@ chmod g+s "$CORRECTOR_ROOT/$CORRECTOR_WORKER"
 
 # Copiar el script y los archivos de configuración.
 
+install moss.pl "$CORRECTOR_ROOT/$CORRECTOR_MOSS"
 install corrector.py "$CORRECTOR_ROOT/$CORRECTOR_MAIN"
 install -m 400 conf/corrector.env "$CORRECTOR_ROOT/conf"
 install -m 600 -o "$CORRECTOR_RUN_USER" -g "$CORRECTOR_RUN_GROUP" \
