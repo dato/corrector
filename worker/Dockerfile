@@ -3,8 +3,8 @@
 
 FROM debian:8
 
-RUN apt-get update && env DEBIAN_FRONTEND=noninteractive \
-    apt-get install --assume-yes --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y    && \
+    apt-get install -y --no-install-recommends \
         build-essential valgrind time python3
 
 COPY worker.py /
