@@ -8,6 +8,7 @@ DATA="/srv/fiuba/75.41/corrector/data/tps"
 
 TP="${1-}"
 TP_DIR="$DATA/$TP"
+MOSS_TITLE="TDA $TP ($(date +%Y-%m-%d))"
 
 if [[ -z $TP ]]; then
   echo >&2 "Uso: $0 <NOMBRE_TP>"
@@ -26,6 +27,6 @@ fi
 #
 cd "$TP_DIR" && find . -name '0*' -type d -prune -o  \
      -type f -name '*.c' -not -name '__MAC*' -print0 |
-  xargs -0n 1000000000 $MOSS -d -l c -c "TDA $TP ($(date +%Y-%m-%d))"
+  xargs -0n 1000000000 $MOSS -d -l c -c "$MOSS_TITLE"
 
 # TODO(dato): capture URL and post to Slack.
