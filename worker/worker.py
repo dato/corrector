@@ -7,7 +7,7 @@ El workflow es simple a propósito:
   - recibe un archivo tar por entrada estándar y lo desempaca en un directorio
     temporal
 
-  - ejecuta `make` en el directorio temporal, con un timeout
+  - ejecuta `make -k` en el directorio temporal, con un timeout
 
 Así, el worker necesita muy poca lógica y se puede ejecutar en un sistema
 de sólo lectura.
@@ -44,7 +44,7 @@ def ejecutar(timeout):
 
   signal.alarm(timeout)
   try:
-    return subprocess.call(["make"], cwd=tmpdir,
+    return subprocess.call(["make", "-k"], cwd=tmpdir,
                            stdin=subprocess.DEVNULL)
   except Timeout:
     sys.stderr.write("El proceso tardó más de {} segundos\n".format(timeout))
