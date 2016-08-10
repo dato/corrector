@@ -1,4 +1,4 @@
-# -*- docker-image-name: "fiuba/corrector" -*-
+# -*- docker-image-name: "algoritmosrw/corrector" -*-
 # vi:et
 
 FROM debian:8
