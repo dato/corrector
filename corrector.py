@@ -25,7 +25,7 @@ Salida:
 
   - un mensaje al alumno con los resultados. Se envía desde GMAIL_ACCOUNT.
 
-  - se guarda una copia de los archivos en DATA_DIR/<TP_ID>/<PADRON>.
+  - se guarda una copia de los archivos en DATA_DIR/<TP_ID>/<YYYY_CX>/<PADRON>.
 """
 
 import base64
@@ -43,7 +43,6 @@ import smtplib
 import subprocess
 import sys
 import tarfile
-import time
 import zipfile
 
 import httplib2
@@ -123,7 +122,7 @@ def procesar_entrega(msg):
   # Crear el directorio donde guardaremos la copia para Moss.
   # TODO(dato): no es óptimo usar aquí el padrón porque puede haber errores
   # tipográficos.
-  moss_dest_dir = os.path.join(DATA_DIR, tp_id, time.strftime("%Y"), padron)
+  moss_dest_dir = os.path.join(DATA_DIR, tp_id, id_cursada(), padron)
   os.makedirs(moss_dest_dir, 0o755, exist_ok=True)
 
   tar = tarfile.open(fileobj=worker.stdin, mode="w|", dereference=True)
@@ -197,6 +196,22 @@ def get_padron_str(subject):
     return "_".join(sorted(matches))
 
   raise ErrorAlumno("no se encontró el número de padrón en el asunto")
+
+
+def id_cursada():
+  """Devuelve el identificador de la cursada según año y cuatrimestre.
+
+  El identificador es del tipo ‘2015_2’ o ‘2016_1’, donde el segundo elemento
+  indica el cuatrimestre.
+
+  El cuatrimestre es:
+
+    - 1 si la fecha es antes del 1 de agosto;
+    - 2 si es igual o posterior.
+  """
+  today = datetime.datetime.today()
+  cutoff = today.replace(month=8, day=1)
+  return "{}_{}".format(today.year, 1 if today < cutoff else 2)
 
 
 def find_zip(msg):
