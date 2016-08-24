@@ -266,14 +266,17 @@ def zip_walk(zip_obj, strip_toplevel=True):
   if not zip_files:
     raise ErrorAlumno("archivo ZIP vacío")
 
-  # Comprobar si los contenidos del ZIP están todos en un mismo directorio.
-  candidate = zip_files[0].rstrip("/") + "/"
-  toplevel_unique = (len(zip_files) > 1 and
-                     all(x.startswith(candidate) for x in zip_files[1:]))
-
-  if strip_toplevel and toplevel_unique:
-    zip_files.pop(0)
-    strip_len = len(candidate)
+  if strip_toplevel and len(zip_files) > 1:
+    # Comprobar si los contenidos del ZIP están todos en un mismo directorio. Si
+    # lo están, el candidato a prefijo es siempre el elemento de menor longitud.
+    # Suele ser zip_files[0], pero no siempre, de ahí el uso de min(). Además, a
+    # veces termina en barra, a veces no (de ahí el uso de rstrip()).
+    candidate = min(zip_files, key=len)
+    toplevel_pfx = candidate.rstrip("/") + "/"
+    if all(x.startswith(toplevel_pfx)
+           for x in zip_files if x != candidate):
+      zip_files.remove(candidate)
+      strip_len = len(toplevel_pfx)
 
   for fname in zip_files:
     arch_name = fname[strip_len:]
