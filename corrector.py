@@ -140,6 +140,7 @@ def procesar_entrega(msg):
       info.type, info.mode = tarfile.DIRTYPE, 0o755
     else:
       info.type, info.mode = tarfile.REGTYPE, 0o644
+      # FIXME: skip skel_files here too?
       moss.save_data(path, zip_obj.open(zip_info.filename))
 
     if path in skel_files:
@@ -284,6 +285,7 @@ class Moss:
   """
   def __init__(self, directory, tp_id, padron):
     self._dest = os.path.join(directory, tp_id, id_cursada(), padron)
+    self._padron = padron
     os.makedirs(self._dest, 0o755, exist_ok=True)
 
   def save_data(self, filename, fileobj):
@@ -299,12 +301,18 @@ class Moss:
     with open(os.path.join(self._dest, basename), "wb") as dest:
       shutil.copyfileobj(fileobj, dest)
 
+    self._git(["add", "-f", basename])
     return True
 
   def flush(self):
-    """Termina de guardar los archivos.
+    """Termina de guardar los archivos en el repositorio.
     """
-    # TODO(dato): guardar en Git y enviar a algoritmos-rw/algo2_entregas.
+    self._git(["add", "--no-all", "."])
+    self._git(["commit", "-m", "New upload {}".format(self._padron)])
+    self._git(["push", "--force-with-lease", "origin", ":"])
+
+  def _git(self, args):
+    subprocess.call(["git"] + args, cwd=self._dest)
 
 
 def send_reply(orig_msg, reply_text):

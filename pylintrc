@@ -2,7 +2,7 @@
 reports=no
 
 [MESSAGES CONTROL]
-disable=locally-disabled
+disable=locally-disabled,fixme
 
 [VARIABLES]
 dummy-variables-rgx=^_$|^unused_

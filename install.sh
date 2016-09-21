@@ -11,6 +11,14 @@ if [[ `whoami` != "root" ]]; then
 fi
 
 source "conf/corrector.env"
+netrc="/home/$CORRECTOR_RUN_USER/.netrc"
+
+if [[ ! -e $netrc ]]; then
+  install -m 600 -o "$CORRECTOR_RUN_USER" -g "$CORRECTOR_RUN_GROUP" \
+      conf/netrc.sample "$netrc"
+  echo >&2 "Actualizar primero $netrc con las contraseñas."
+  exit 1
+fi
 
 ##
 
@@ -55,6 +63,20 @@ mkdir_p "$CORRECTOR_ROOT/$CORRECTOR_SKEL" "root:root"
 
 ##
 
+# Clonar repositorio de entregas
+
+sudo -u "$CORRECTOR_RUN_USER" \
+     git clone "https://$CORRECTOR_GH_USER@github.com/$CORRECTOR_GH_REPO" \
+     "$CORRECTOR_ROOT/$CORRECTOR_TPS"
+
+sudo -u "$CORRECTOR_RUN_USER" \
+     git config --global user.name "$CORRECTOR_GH_USER"
+
+sudo -u "$CORRECTOR_RUN_USER" \
+     git config --global user.email "$CORRECTOR_GH_USER@users.noreply.github.com"
+
+##
+
 # Compilar el wrapper del worker.
 
 gcc -o "$CORRECTOR_ROOT/$CORRECTOR_WORKER" \
@@ -75,10 +97,3 @@ install -m 600 -o "$CORRECTOR_RUN_USER" -g "$CORRECTOR_RUN_GROUP" \
 
 cp conf/corrector.service /etc/systemd/system
 systemctl daemon-reload
-
-if [[ ! -e "/home/$CORRECTOR_RUN_USER/.netrc" ]]; then
-  install -m 600 -o "$CORRECTOR_RUN_USER" -g "$CORRECTOR_RUN_GROUP" \
-      conf/netrc.sample "/home/$CORRECTOR_RUN_USER/.netrc"
-  echo >&2 "Actualizar /home/$CORRECTOR_RUN_USER/.netrc con la contraseña."
-  exit 1
-fi
