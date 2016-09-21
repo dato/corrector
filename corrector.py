@@ -293,16 +293,12 @@ class Moss:
 
     Devuelve True si se guardó, False si se decidió no guardarlo.
     """
-    if any(filename.endswith(sfx) for sfx in [".o", "~", ".bak", ".out"]):
-      return False
-
     basename = filename.replace("/", "_")
 
     with open(os.path.join(self._dest, basename), "wb") as dest:
       shutil.copyfileobj(fileobj, dest)
 
-    self._git(["add", "-f", basename])
-    return True
+    return self._git(["add", basename]) == 0
 
   def flush(self):
     """Termina de guardar los archivos en el repositorio.
