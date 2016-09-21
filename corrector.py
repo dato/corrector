@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.6
 
 """Script principal del corrector automático de Algoritmos II.
 
@@ -37,8 +37,8 @@ import email.utils
 import io
 import mimetypes
 import os
+import pathlib
 import re
-import shutil
 import smtplib
 import subprocess
 import sys
@@ -48,10 +48,10 @@ import zipfile
 import httplib2
 import oauth2client.client
 
-ROOT_DIR = os.environ["CORRECTOR_ROOT"]
-SKEL_DIR = os.path.join(ROOT_DIR, os.environ["CORRECTOR_SKEL"])
-DATA_DIR = os.path.join(ROOT_DIR, os.environ["CORRECTOR_TPS"])
-WORKER_BIN = os.path.join(ROOT_DIR, os.environ["CORRECTOR_WORKER"])
+ROOT_DIR = pathlib.Path(os.environ["CORRECTOR_ROOT"])
+SKEL_DIR = ROOT_DIR / os.environ["CORRECTOR_SKEL"]
+DATA_DIR = ROOT_DIR / os.environ["CORRECTOR_TPS"]
+WORKER_BIN = ROOT_DIR / os.environ["CORRECTOR_WORKER"]
 
 MAX_ZIP_SIZE = 1024 * 1024  # 1 MiB
 PADRON_REGEX = re.compile(r"\b(SP\d+|CBC\d+|\d{5,})\b")
@@ -110,7 +110,7 @@ def procesar_entrega(msg):
   padron = get_padron_str(msg["Subject"])
   zip_obj = find_zip(msg)
 
-  skel_dir = os.path.join(SKEL_DIR, tp_id)
+  skel_dir = SKEL_DIR / tp_id
   skel_files = set()
 
   # Lanzar ya el proceso worker para poder pasar su stdin a tarfile.open().
@@ -122,12 +122,12 @@ def procesar_entrega(msg):
   tar = tarfile.open(fileobj=worker.stdin, mode="w|", dereference=True)
 
   # Añadir al archivo TAR la base del TP (skel_dir).
-  for path, _, filenames in os.walk(skel_dir):
-    for fname in filenames:
-      full_path = os.path.join(path, fname)
-      arch_path = os.path.relpath(full_path, skel_dir)
-      skel_files.add(arch_path)
-      tar.add(full_path, arch_path)
+  for entry in os.scandir(skel_dir):
+    if entry.is_file():
+      path = pathlib.PurePath(entry.path)
+      rel_path = path.relative_to(skel_dir)
+      skel_files.add(rel_path)
+      tar.add(path, rel_path)
 
   moss = Moss(DATA_DIR, tp_id, padron)
 
@@ -142,7 +142,7 @@ def procesar_entrega(msg):
     else:
       info.type, info.mode = tarfile.REGTYPE, 0o644
       # FIXME: skip skel_files here too?
-      moss.save_data(path, zip_obj.open(zip_info.filename))
+      moss.save_data(path, zip_obj.read(zip_info))
 
     if path in skel_files:
       continue
@@ -168,8 +168,8 @@ def guess_tp(subject):
 
   Por ejemplo, ‘tp0’ o ‘pila’.
   """
-  candidates = {x.lower(): x for x in os.listdir(SKEL_DIR)}
-  subj_words = [x.lower() for x in re.split(r"[^_\w]+", subject)]
+  subj_words = [w.lower() for w in re.split(r"[^_\w]+", subject)]
+  candidates = {p.name.lower(): p.name for p in SKEL_DIR.iterdir()}
 
   for word in subj_words:
     if word in candidates:
@@ -284,22 +284,19 @@ def zip_walk(zip_obj, strip_toplevel=True):
 class Moss:
   """Guarda código fuente del alumno.
   """
-  def __init__(self, directory, tp_id, padron):
-    self._dest = os.path.join(directory, tp_id, id_cursada(), padron)
+  def __init__(self, pathobj, tp_id, padron):
+    self._dest = pathobj / tp_id / id_cursada() / padron
     self._padron = padron
-    os.makedirs(self._dest, 0o755, exist_ok=True)
+    self._dest.mkdir(parents=True, exist_ok=True)
 
-  def save_data(self, filename, fileobj):
+  def save_data(self, filename, contents):
     """Guarda un archivo si es código fuente.
 
     Devuelve True si se guardó, False si se decidió no guardarlo.
     """
-    basename = filename.replace("/", "_")
-
-    with open(os.path.join(self._dest, basename), "wb") as dest:
-      shutil.copyfileobj(fileobj, dest)
-
-    return self._git(["add", basename]) == 0
+    path = self._dest / filename.replace("/", "_")
+    path.write_bytes(contents)
+    return self._git(["add", path.name]) == 0
 
   def flush(self):
     """Termina de guardar los archivos en el repositorio.
