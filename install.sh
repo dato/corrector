@@ -70,10 +70,10 @@ sudo -u "$CORRECTOR_RUN_USER" \
      "$CORRECTOR_ROOT/$CORRECTOR_TPS"
 
 sudo -u "$CORRECTOR_RUN_USER" \
-     git config --global user.name "$CORRECTOR_GH_USER"
+     git config user.name "$CORRECTOR_GH_USER"
 
 sudo -u "$CORRECTOR_RUN_USER" \
-     git config --global user.email "$CORRECTOR_GH_USER@users.noreply.github.com"
+     git config user.email "$CORRECTOR_GH_USER@users.noreply.github.com"
 
 ##
 
