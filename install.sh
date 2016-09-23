@@ -65,15 +65,16 @@ mkdir_p "$CORRECTOR_ROOT/$CORRECTOR_SKEL" "root:root"
 
 # Clonar repositorio de entregas
 
-sudo -u "$CORRECTOR_RUN_USER" \
-     git clone "https://$CORRECTOR_GH_USER@github.com/$CORRECTOR_GH_REPO" \
-     "$CORRECTOR_ROOT/$CORRECTOR_TPS"
+repo="$CORRECTOR_ROOT/$CORRECTOR_TPS"
 
 sudo -u "$CORRECTOR_RUN_USER" \
-     git config user.name "$CORRECTOR_GH_USER"
+     git clone "https://$CORRECTOR_GH_USER@github.com/$CORRECTOR_GH_REPO" "$repo"
 
 sudo -u "$CORRECTOR_RUN_USER" \
-     git config user.email "$CORRECTOR_GH_USER@users.noreply.github.com"
+     git -C "$repo" config user.name "$CORRECTOR_GH_USER"
+
+sudo -u "$CORRECTOR_RUN_USER" \
+     git -C "$repo" config user.email "$CORRECTOR_GH_USER@users.noreply.github.com"
 
 ##
 
