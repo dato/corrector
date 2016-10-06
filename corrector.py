@@ -110,20 +110,14 @@ def procesar_entrega(msg):
   padron = get_padron_str(msg["Subject"])
   zip_obj = find_zip(msg)
 
+  skel_dir = os.path.join(SKEL_DIR, tp_id)
+  skel_files = set()
+
   # Lanzar ya el proceso worker para poder pasar su stdin a tarfile.open().
   worker = subprocess.Popen([WORKER_BIN],
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
-
-  skel_dir = os.path.join(SKEL_DIR, tp_id)
-  skel_files = set()
-
-  # Crear el directorio donde guardaremos la copia para Moss.
-  # TODO(dato): no es óptimo usar aquí el padrón porque puede haber errores
-  # tipográficos.
-  moss_dest_dir = os.path.join(DATA_DIR, tp_id, id_cursada(), padron)
-  os.makedirs(moss_dest_dir, 0o755, exist_ok=True)
 
   tar = tarfile.open(fileobj=worker.stdin, mode="w|", dereference=True)
 
@@ -135,29 +129,29 @@ def procesar_entrega(msg):
       skel_files.add(arch_path)
       tar.add(full_path, arch_path)
 
+  moss = Moss(DATA_DIR, tp_id, padron)
+
   # A continuación añadir los archivos de la entrega (ZIP).
   for path, zip_info in zip_walk(zip_obj):
+    info = tarfile.TarInfo(path)
+    info.size = zip_info.file_size
+
+    if path.endswith("/"):
+      info.type, info.mode = tarfile.DIRTYPE, 0o755
+    else:
+      info.type, info.mode = tarfile.REGTYPE, 0o644
+      # FIXME: skip skel_files here too?
+      moss.save_data(path, zip_obj.open(zip_info.filename))
+
     if path in skel_files:
       continue
     if path in {"makefile", "GNUmakefile"}:
       raise ErrorAlumno(
           "archivo ‘{}’ no aceptado; solo ‘Makefile’".format(path))
 
-    info = tarfile.TarInfo(path)
-    info.size = zip_info.file_size
-    if path.endswith("/"):
-      info.type, info.mode = tarfile.DIRTYPE, 0o755
-    else:
-      info.type, info.mode = tarfile.REGTYPE, 0o644
-
     tar.addfile(info, zip_obj.open(zip_info.filename))
 
-    # Guardar una copia del código para Moss.
-    if path.endswith(".c"):
-      basename = path.replace("/", "_")
-      with open(os.path.join(moss_dest_dir, basename), "wb") as dest:
-        shutil.copyfileobj(zip_obj.open(zip_info.filename), dest)
-
+  moss.flush()
   tar.close()
 
   stdout, _ = worker.communicate()
@@ -284,6 +278,37 @@ def zip_walk(zip_obj, strip_toplevel=True):
       raise ErrorAlumno("ruta no aceptada: {}".format(fname))
     else:
       yield arch_name, zip_obj.getinfo(fname)
+
+
+class Moss:
+  """Guarda código fuente del alumno.
+  """
+  def __init__(self, directory, tp_id, padron):
+    self._dest = os.path.join(directory, tp_id, id_cursada(), padron)
+    self._padron = padron
+    os.makedirs(self._dest, 0o755, exist_ok=True)
+
+  def save_data(self, filename, fileobj):
+    """Guarda un archivo si es código fuente.
+
+    Devuelve True si se guardó, False si se decidió no guardarlo.
+    """
+    basename = filename.replace("/", "_")
+
+    with open(os.path.join(self._dest, basename), "wb") as dest:
+      shutil.copyfileobj(fileobj, dest)
+
+    return self._git(["add", basename]) == 0
+
+  def flush(self):
+    """Termina de guardar los archivos en el repositorio.
+    """
+    self._git(["add", "--no-all", "."])
+    self._git(["commit", "-m", "New upload {}".format(self._padron)])
+    self._git(["push", "--force-with-lease", "origin", ":"])
+
+  def _git(self, args):
+    subprocess.call(["git"] + args, cwd=self._dest)
 
 
 def send_reply(orig_msg, reply_text):

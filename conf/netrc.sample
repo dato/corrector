@@ -1,6 +1,7 @@
 # Este fichero debería copiarse a $HOME/.netrc del usuario que ejecute
 # fetchmail.
 
+machine github.com login wachenbot password ACCESS_TOKEN
 machine imap.gmail.com login tps.7541rw@gmail.com password PASSWORD
 
 # vi:nobackup:noswapfile:ft=netrc
