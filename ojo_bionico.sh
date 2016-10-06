@@ -34,12 +34,17 @@ trap "rm -f \"$TMP1\" \"$TMP2\"" EXIT
 # `cd $TP_DIR` helps with the above by keeping the command line short.
 #
 CUR=$(ls "$TP_DIR" | sed -n '$p')
-PAST=$(ls -r "$TP_DIR" | sed '1d')
+ALL=$(ls -r "$TP_DIR")
 
-for prev in $PAST; do
+for prev in $ALL; do
     ls "$TP_DIR/$prev" >"$TMP1"
     ls "$TP_DIR/$CUR"  >"$TMP2"
     EXCLUDE=$(comm -12 "$TMP1" "$TMP2" | sed "s#^#$prev/#" | tr '\n' '|')
+    if [[ $prev = $CUR ]]; then
+        # TODO: move above lines inside the if block.
+        prev=""
+        EXCLUDE=""
+    fi
 
     cd "$TP_DIR" && $FIND $CUR $prev -regextype egrep   \
         \( -name '0*' -o -regex "$EXCLUDE" \) -prune -o \
