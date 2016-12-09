@@ -16,10 +16,9 @@ El workflow es:
   - del mensaje entrante se detecta el identificador del TP (‘tp0’, ‘pila’,
     etc.) y el ZIP con la entrega
 
-  - se une la entrega con los archivos base, de tal manera que del ZIP se ignora
-    cualquier archivo presente en la base
-
-  - el resultado de esta unión se le pasa a WORKER_BIN por entrada estándar
+  - se ejecuta el worker, quien recibe por entrada estándar un archivo TAR
+    que contiene los archivos de la entrega (subdirectorio "orig") y los
+    archivos base (subdirectorio "skel")
 
 Salida:
 
@@ -93,8 +92,9 @@ def main():
     procesar_entrega(msg)
   except ErrorAlumno as ex:
     send_reply(msg, "ERROR: {}.".format(ex))
-
-  # TODO(dato): capturar ‘ErrorInterno’ y avisar.
+  except ErrorInterno as ex:
+    print(ex, file=sys.stderr)
+    sys.exit(1)  # Ensure message will not be deleted by fetchmail.
 
 
 def procesar_entrega(msg):
@@ -109,9 +109,7 @@ def procesar_entrega(msg):
   tp_id = guess_tp(msg["Subject"])
   padron = get_padron_str(msg["Subject"])
   zip_obj = find_zip(msg)
-
   skel_dir = SKEL_DIR / tp_id
-  skel_files = set()
 
   # Lanzar ya el proceso worker para poder pasar su stdin a tarfile.open().
   worker = subprocess.Popen([WORKER_BIN],
@@ -126,37 +124,31 @@ def procesar_entrega(msg):
     if entry.is_file():
       path = pathlib.PurePath(entry.path)
       rel_path = path.relative_to(skel_dir)
-      skel_files.add(rel_path)
-      tar.add(path, rel_path)
+      tar.add(path, "skel" / rel_path)
 
   moss = Moss(DATA_DIR, tp_id, padron)
 
   # A continuación añadir los archivos de la entrega (ZIP).
   for path, zip_info in zip_walk(zip_obj):
-    info = tarfile.TarInfo(path.as_posix())
+    info = tarfile.TarInfo(("orig" / path).as_posix())
     info.size = zip_info.file_size
     info.mtime = zip_datetime(zip_info).timestamp()
     info.type, info.mode = tarfile.REGTYPE, 0o644
 
     moss.save_data(path, zip_obj.read(zip_info))
-
-    if path in skel_files:
-      continue
-    if path in {"makefile", "GNUmakefile"}:
-      raise ErrorAlumno(
-          "archivo ‘{}’ no aceptado; solo ‘Makefile’".format(path))
-
     tar.addfile(info, zip_obj.open(zip_info.filename))
 
   moss.flush()
   tar.close()
 
   stdout, _ = worker.communicate()
-  output = stdout.decode("utf-8", errors="replace")
+  output = stdout.decode("utf-8")
   retcode = worker.wait()
 
-  send_reply(msg, "{}\n\n{}".format("Todo OK" if retcode == 0
-                                    else "ERROR", output))
+  if retcode == 0:
+    send_reply(msg, output)
+  else:
+    raise ErrorInterno(output)
 
 
 def guess_tp(subject):
