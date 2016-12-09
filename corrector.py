@@ -135,6 +135,7 @@ def procesar_entrega(msg):
   for path, zip_info in zip_walk(zip_obj):
     info = tarfile.TarInfo(path)
     info.size = zip_info.file_size
+    info.mtime = zip_datetime(zip_info).timestamp()
 
     if path.endswith("/"):
       info.type, info.mode = tarfile.DIRTYPE, 0o755
@@ -309,6 +310,12 @@ class Moss:
 
   def _git(self, args):
     subprocess.call(["git"] + args, cwd=self._dest)
+
+
+def zip_datetime(info):
+  """Gets a datetime.datetime from a ZipInfo object.
+  """
+  return datetime.datetime(*info.date_time)
 
 
 def send_reply(orig_msg, reply_text):
