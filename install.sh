@@ -71,7 +71,7 @@ fi
 repo="$CORRECTOR_ROOT/$CORRECTOR_TPS"
 
 sudo -u "$CORRECTOR_RUN_USER" \
-     git clone "https://$CORRECTOR_GH_USER@github.com/$CORRECTOR_GH_REPO" "$repo"
+     git clone "https://github.com/$CORRECTOR_GH_REPO" "$repo"
 
 sudo -u "$CORRECTOR_RUN_USER" \
      git -C "$repo" config user.name "$CORRECTOR_GH_USER"
