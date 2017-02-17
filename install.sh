@@ -11,14 +11,6 @@ if [[ `whoami` != "root" ]]; then
 fi
 
 source "conf/corrector.env"
-netrc="/home/$CORRECTOR_RUN_USER/.netrc"
-
-if [[ ! -e $netrc ]]; then
-  install -m 600 -o "$CORRECTOR_RUN_USER" -g "$CORRECTOR_RUN_GROUP" \
-      conf/netrc.sample "$netrc"
-  echo >&2 "Actualizar primero $netrc con las contraseñas."
-  exit 1
-fi
 
 ##
 
@@ -59,7 +51,18 @@ mkdir_p "$CORRECTOR_ROOT" "root:root"
 mkdir_p "$CORRECTOR_ROOT/bin" "root:root"
 mkdir_p "$CORRECTOR_ROOT/conf" "root:root"
 mkdir_p "$CORRECTOR_ROOT/$CORRECTOR_TPS" "$OWNER"
-mkdir_p "$CORRECTOR_ROOT/$CORRECTOR_SKEL" "root:root"
+mkdir_p "$CORRECTOR_ROOT/$CORRECTOR_SKEL" "$OWNER"
+
+##
+
+netrc="/home/$CORRECTOR_RUN_USER/.netrc"
+
+if [[ ! -e $netrc ]]; then
+  install -m 600 -o "$CORRECTOR_RUN_USER" -g "$CORRECTOR_RUN_GROUP" \
+      conf/netrc.sample "$netrc"
+  echo >&2 "Actualizar primero $netrc con las contraseñas."
+  exit 1
+fi
 
 ##
 
