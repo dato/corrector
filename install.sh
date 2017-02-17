@@ -96,5 +96,5 @@ install -m 400 conf/corrector.env "$CORRECTOR_ROOT/conf"
 install -m 600 -o "$CORRECTOR_RUN_USER" -g "$CORRECTOR_RUN_GROUP" \
     conf/fetchmailrc "/home/$CORRECTOR_RUN_USER/.fetchmailrc"
 
-cp conf/corrector.service /etc/systemd/system
+cp conf/corrector@.service /etc/systemd/system
 systemctl daemon-reload

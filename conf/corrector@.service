@@ -1,12 +1,14 @@
 [Unit]
-Description=Corrector automático para Algoritmos II
+Description=Corrector automático para %i
 After=docker.service
 
 [Service]
-User=fiuba7541
-EnvironmentFile=/srv/fiuba/75.41/corrector/conf/corrector.env
+User=%i
+Environment=CORRECTOR_ROOT=/home/%i/corrector
+EnvironmentFile=/home/%i/corrector/conf/corrector.env
 ExecStart=/usr/bin/fetchmail --daemon 180 --nodetach \
     --mda ${CORRECTOR_ROOT}/${CORRECTOR_MAIN}
+
 
 [Install]
 WantedBy=multi-user.target
