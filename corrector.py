@@ -133,16 +133,12 @@ def procesar_entrega(msg):
 
   # A continuación añadir los archivos de la entrega (ZIP).
   for path, zip_info in zip_walk(zip_obj):
-    info = tarfile.TarInfo(path)
+    info = tarfile.TarInfo(path.as_posix())
     info.size = zip_info.file_size
     info.mtime = zip_datetime(zip_info).timestamp()
+    info.type, info.mode = tarfile.REGTYPE, 0o644
 
-    if path.endswith("/"):
-      info.type, info.mode = tarfile.DIRTYPE, 0o755
-    else:
-      info.type, info.mode = tarfile.REGTYPE, 0o644
-      # FIXME: skip skel_files here too?
-      moss.save_data(path, zip_obj.read(zip_info))
+    moss.save_data(path, zip_obj.read(zip_info))
 
     if path in skel_files:
       continue
@@ -255,30 +251,25 @@ def zip_walk(zip_obj, strip_toplevel=True):
   Yields:
     - tuplas (nombre_archivo, zipinfo_object).
   """
-  zip_files = zip_obj.namelist()
-  strip_len = 0
+  zip_files = [pathlib.PurePath(f) for f in zip_obj.namelist()]
+  all_parents = set()
+  common_parent = pathlib.PurePath(".")
 
   if not zip_files:
     raise ErrorAlumno("archivo ZIP vacío")
 
+  for path in zip_files:
+    all_parents.update(path.parents)
+
   if strip_toplevel and len(zip_files) > 1:
-    # Comprobar si los contenidos del ZIP están todos en un mismo directorio. Si
-    # lo están, el candidato a prefijo es siempre el elemento de menor longitud.
-    # Suele ser zip_files[0], pero no siempre, de ahí el uso de min(). Además, a
-    # veces termina en barra, a veces no (de ahí el uso de rstrip()).
-    candidate = min(zip_files, key=len)
-    toplevel_pfx = candidate.rstrip("/") + "/"
-    if all(x.startswith(toplevel_pfx)
-           for x in zip_files if x != candidate):
-      zip_files.remove(candidate)
-      strip_len = len(toplevel_pfx)
+    parents = {p.parts[0] for p in zip_files}
+    if len(parents) == 1:
+      common_parent = parents.pop()
 
   for fname in zip_files:
-    arch_name = fname[strip_len:]
-    if os.path.normpath(arch_name).startswith(("/", "../")):
-      raise ErrorAlumno("ruta no aceptada: {}".format(fname))
-    else:
-      yield arch_name, zip_obj.getinfo(fname)
+    if fname not in all_parents:
+      yield (fname.relative_to(common_parent),
+             zip_obj.getinfo(fname.as_posix()))
 
 
 class Moss:
@@ -294,7 +285,7 @@ class Moss:
 
     Devuelve True si se guardó, False si se decidió no guardarlo.
     """
-    path = self._dest / filename.replace("/", "_")
+    path = self._dest / filename.name
     path.write_bytes(contents)
     return self._git(["add", path.name]) == 0
 
