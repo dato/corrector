@@ -19,7 +19,6 @@ El script:
 """
 
 import argparse
-import atexit
 import pathlib
 import shutil
 import signal
@@ -72,21 +71,21 @@ CORRECTORES = {
 def ejecutar(corrector, timeout):
   """Función principal del script.
   """
-  tmpdir = tempfile.mkdtemp(prefix="corrector.")
-  atexit.register(shutil.rmtree, tmpdir)
+  with tempfile.TemporaryDirectory(prefix="corrector.") as tmpdir:
+    # Usamos sys.stdin.buffer para leer en binario (sys.stdin es texto).
+    # Asimismo, el modo ‘r|’ (en lugar de ‘r’) indica que fileobj no es
+    # seekable.
+    with tarfile.open(fileobj=sys.stdin.buffer, mode="r|") as tar:
+      tar.extractall(tmpdir)
 
-  # Usamos sys.stdin.buffer para leer en binario (sys.stdin es texto). Asimismo,
-  # el modo ‘r|’ (en lugar de ‘r’) indica que fileobj no es seekable.
-  with tarfile.open(fileobj=sys.stdin.buffer, mode="r|") as tar:
-    tar.extractall(tmpdir)
-
-  signal.alarm(timeout)
-  try:
-    corrector(tmpdir).run()
-  except Timeout:
-    raise ErrorAlumno("El proceso tardó más de {} segundos".format(timeout))
-  finally:
-    signal.alarm(0)
+    # TODO: XXX use subprocess's own timeout param
+    signal.alarm(timeout)
+    try:
+      corrector(tmpdir).run()
+    except Timeout:
+      raise ErrorAlumno("El proceso tardó más de {} segundos".format(timeout))
+    finally:
+      signal.alarm(0)
 
 
 def main():
