@@ -69,6 +69,11 @@ IGNORE_ADDRESSES = {
     "no-reply@accounts.google.com",  # Notificaciones sobre la contraseña.
 }
 
+# Archivos que no aceptamos en las entregas.
+FORBIDDEN_EXTENSIONS = {
+    ".o", ".class", ".jar",
+}
+
 
 class ErrorInterno(Exception):
   """Excepción para cualquier error interno en el programa.
@@ -232,6 +237,12 @@ def find_zip(msg):
   raise ErrorAlumno("no se encontró un archivo ZIP en el mensaje")
 
 
+def is_forbidden(path):
+  return (path.is_absolute() or
+          ".." in path.parts or
+          path.suffix in FORBIDDEN_EXTENSIONS)
+
+
 def zip_walk(zip_obj, strip_toplevel=True):
   """Itera sobre los archivos de un zip.
 
@@ -244,11 +255,16 @@ def zip_walk(zip_obj, strip_toplevel=True):
     - tuplas (nombre_archivo, zipinfo_object).
   """
   zip_files = [pathlib.PurePath(f) for f in zip_obj.namelist()]
+  forbidden_files = [f for f in zip_files if is_forbidden(f)]
   all_parents = set()
   common_parent = pathlib.PurePath(".")
 
   if not zip_files:
     raise ErrorAlumno("archivo ZIP vacío")
+
+  if forbidden_files:
+    raise ErrorAlumno("no se permiten archivos con estas extensiones:\n\n  • " +
+                      "\n  • ".join(f.name for f in forbidden_files))
 
   for path in zip_files:
     all_parents.update(path.parents)
