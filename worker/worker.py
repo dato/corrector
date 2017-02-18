@@ -27,6 +27,7 @@ import sys
 import tarfile
 import tempfile
 
+from java import CorregirJava
 
 class ErrorAlumno(Exception):
   pass
@@ -65,6 +66,7 @@ class CorregirV2:
 
 CORRECTORES = {
     "v2": CorregirV2,
+    "java": CorregirJava,
 }
 
 

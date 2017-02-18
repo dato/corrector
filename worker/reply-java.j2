@@ -1,0 +1,46 @@
+{# TODO: Añadir si fuera de plazo. -#}
+Entrega {{- " NO " if reject else " " -}} aceptada
+
+Resumen:
+
+# if steps.compilar
+  # set warn = ", con warnings" if steps.compilar.1 else ""
+  1. el código entregado compila: {{ "sí" + warn if steps.compilar.0 else
+                                     "no" }}.
+
+# endif
+
+# if steps.validar_api
+  2. es compatible con la API definida: {{ "sí" if steps.validar_api.0 else
+                                           "no" }}.
+
+# endif
+
+# if steps.pruebas_basicas
+  3. valida las pruebas básicas: {{ "sí" if steps.pruebas_basicas.0 else
+                                    "no" }}.
+
+# endif
+
+~ ~ ~
+
+# if steps.pruebas_basicas
+# if not steps.pruebas_basicas.0
+ERRORES EN LAS PRUEBAS
+# endif
+
+{{ steps.pruebas_basicas.1 }}
+
+# else
+# if steps.validar_api and not steps.validar_api.0
+ERRORES EN LAS FIRMAS DEFINIDAS
+
+{{ steps.validar_api.1}}
+# endif
+
+# if steps.compilar and steps.compilar.1
+{{ "ERRORES" if reject else "AVISOS" }} DE COMPILACIÓN
+
+{{ steps.compilar.1}}
+# endif
+# endif
