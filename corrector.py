@@ -38,6 +38,7 @@ import mimetypes
 import os
 import pathlib
 import re
+import shutil
 import smtplib
 import subprocess
 import sys
@@ -286,7 +287,8 @@ class Moss:
   def __init__(self, pathobj, tp_id, padron):
     self._dest = pathobj / tp_id / id_cursada() / padron
     self._padron = padron
-    self._dest.mkdir(parents=True, exist_ok=True)
+    shutil.rmtree(self._dest, ignore_errors=True)
+    self._dest.mkdir(parents=True)
 
   def save_data(self, filename, contents):
     """Guarda un archivo si es código fuente.
@@ -300,7 +302,7 @@ class Moss:
   def flush(self):
     """Termina de guardar los archivos en el repositorio.
     """
-    self._git(["add", "--no-all", "."])
+    self._git(["add", "--no-ignore-removal", "."])
     self._git(["commit", "-m", "New upload {}".format(self._padron)])
     self._git(["push", "--force-with-lease", "origin", ":"])
 
