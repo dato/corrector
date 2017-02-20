@@ -52,6 +52,7 @@ ROOT_DIR = pathlib.Path(os.environ["CORRECTOR_ROOT"])
 SKEL_DIR = ROOT_DIR / os.environ["CORRECTOR_SKEL"]
 DATA_DIR = ROOT_DIR / os.environ["CORRECTOR_TPS"]
 WORKER_BIN = ROOT_DIR / os.environ["CORRECTOR_WORKER"]
+GITHUB_URL = "https://github.com/" + os.environ["CORRECTOR_GH_REPO"]
 
 MAX_ZIP_SIZE = 1024 * 1024  # 1 MiB
 PADRON_REGEX = re.compile(r"\b(SP\d+|CBC\d+|\d{5,})\b")
@@ -152,7 +153,8 @@ def procesar_entrega(msg):
   retcode = worker.wait()
 
   if retcode == 0:
-    send_reply(msg, output)
+    send_reply(msg, output +
+               "URL de esta entrega (para uso docente):\n" + moss.url())
   else:
     raise ErrorInterno(output)
 
@@ -289,6 +291,13 @@ class Moss:
     self._padron = padron
     shutil.rmtree(self._dest, ignore_errors=True)
     self._dest.mkdir(parents=True)
+
+  def url(self):
+    short_rev = "git show -s --pretty=tformat:%h"
+    relative_dir = "git rev-parse --show-prefix"
+    return subprocess.check_output(
+        f'echo "{GITHUB_URL}/tree/$({short_rev})/$({relative_dir})"',
+        shell=True, encoding="utf-8", cwd=self._dest)
 
   def save_data(self, filename, contents):
     """Guarda un archivo si es código fuente.
