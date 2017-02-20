@@ -52,6 +52,7 @@ ROOT_DIR = os.environ["CORRECTOR_ROOT"]
 SKEL_DIR = os.path.join(ROOT_DIR, os.environ["CORRECTOR_SKEL"])
 DATA_DIR = os.path.join(ROOT_DIR, os.environ["CORRECTOR_TPS"])
 WORKER_BIN = os.path.join(ROOT_DIR, os.environ["CORRECTOR_WORKER"])
+GITHUB_URL = "https://github.com/" + os.environ["CORRECTOR_GH_REPO"]
 
 MAX_ZIP_SIZE = 1024 * 1024  # 1 MiB
 PADRON_REGEX = re.compile(r"\b(SP\d+|CBC\d+|\d{5,})\b")
@@ -159,8 +160,9 @@ def procesar_entrega(msg):
   output = stdout.decode("utf-8", errors="replace")
   retcode = worker.wait()
 
-  send_reply(msg, "{}\n\n{}".format("Todo OK" if retcode == 0
-                                    else "ERROR", output))
+  send_reply(msg, "{}\n\n{}\n{}".format(
+    "Todo OK" if retcode == 0 else "ERROR", output,
+    "URL de esta entrega (para uso docente):\n" + moss.url()))
 
 
 def guess_tp(subject):
@@ -288,6 +290,13 @@ class Moss:
     self._dest = os.path.join(directory, tp_id, id_cursada(), padron)
     self._padron = padron
     os.makedirs(self._dest, 0o755, exist_ok=True)
+
+  def url(self):
+    short_rev = "git show -s --pretty=tformat:%h"
+    relative_dir = "git rev-parse --show-prefix"
+    return subprocess.check_output('echo "{}/tree/$({})/$({})"'.format(
+        GITHUB_URL, short_rev, relative_dir),
+        shell=True, cwd=self._dest).decode("utf-8", "replace")
 
   def save_data(self, filename, fileobj):
     """Guarda un archivo si es código fuente.
