@@ -224,15 +224,10 @@ def find_zip(msg):
     if part.get_content_maintype() == "multipart":
       continue  # Multipart es una enclosure.
 
-    filename = part.get_filename()
+    filename = part.get_filename() or ""
     content_type = part.get_content_type()
 
-    if filename:
-      extension = os.path.splitext(filename)[1]
-    else:
-      extension = mimetypes.guess_extension(content_type)
-
-    if extension and extension.lower() == ".zip":
+    if filename.lower().endswith(".zip") or content_type == "application/zip":
       zipbytes = part.get_payload(decode=True)
       if len(zipbytes) > MAX_ZIP_SIZE:
         raise ErrorAlumno(
