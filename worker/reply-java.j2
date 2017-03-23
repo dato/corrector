@@ -37,10 +37,10 @@ ERRORES EN LAS FIRMAS DEFINIDAS
 
 {{ steps.validar_api.1}}
 # endif
+# endif
 
 # if steps.compilar and steps.compilar.1
 {{ "ERRORES" if reject else "AVISOS" }} DE COMPILACIÓN
 
 {{ steps.compilar.1}}
-# endif
 # endif
