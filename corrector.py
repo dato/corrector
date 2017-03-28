@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.6
 
 """Script principal del corrector automático de Algoritmos II.
 
@@ -16,10 +16,9 @@ El workflow es:
   - del mensaje entrante se detecta el identificador del TP (‘tp0’, ‘pila’,
     etc.) y el ZIP con la entrega
 
-  - se une la entrega con los archivos base, de tal manera que del ZIP se ignora
-    cualquier archivo presente en la base
-
-  - el resultado de esta unión se le pasa a WORKER_BIN por entrada estándar
+  - se ejecuta el worker, quien recibe por entrada estándar un archivo TAR
+    que contiene los archivos de la entrega (subdirectorio "orig") y los
+    archivos base (subdirectorio "skel")
 
 Salida:
 
@@ -37,6 +36,7 @@ import email.utils
 import io
 import mimetypes
 import os
+import pathlib
 import re
 import shutil
 import smtplib
@@ -48,10 +48,10 @@ import zipfile
 import httplib2
 import oauth2client.client
 
-ROOT_DIR = os.environ["CORRECTOR_ROOT"]
-SKEL_DIR = os.path.join(ROOT_DIR, os.environ["CORRECTOR_SKEL"])
-DATA_DIR = os.path.join(ROOT_DIR, os.environ["CORRECTOR_TPS"])
-WORKER_BIN = os.path.join(ROOT_DIR, os.environ["CORRECTOR_WORKER"])
+ROOT_DIR = pathlib.Path(os.environ["CORRECTOR_ROOT"])
+SKEL_DIR = ROOT_DIR / os.environ["CORRECTOR_SKEL"]
+DATA_DIR = ROOT_DIR / os.environ["CORRECTOR_TPS"]
+WORKER_BIN = ROOT_DIR / os.environ["CORRECTOR_WORKER"]
 GITHUB_URL = "https://github.com/" + os.environ["CORRECTOR_GH_REPO"]
 
 MAX_ZIP_SIZE = 1024 * 1024  # 1 MiB
@@ -69,6 +69,11 @@ OAUTH_REFRESH_TOKEN = os.environ.get("CORRECTOR_REFRESH_TOKEN")
 IGNORE_ADDRESSES = {
     GMAIL_ACCOUNT,                   # Mail de nosotros mismos.
     "no-reply@accounts.google.com",  # Notificaciones sobre la contraseña.
+}
+
+# Archivos que no aceptamos en las entregas.
+FORBIDDEN_EXTENSIONS = {
+    ".o", ".class", ".jar",
 }
 
 
@@ -94,8 +99,9 @@ def main():
     procesar_entrega(msg)
   except ErrorAlumno as ex:
     send_reply(msg, "ERROR: {}.".format(ex))
-
-  # TODO(dato): capturar ‘ErrorInterno’ y avisar.
+  except ErrorInterno as ex:
+    print(ex, file=sys.stderr)
+    sys.exit(1)  # Ensure message will not be deleted by fetchmail.
 
 
 def procesar_entrega(msg):
@@ -110,9 +116,7 @@ def procesar_entrega(msg):
   tp_id = guess_tp(msg["Subject"])
   padron = get_padron_str(msg["Subject"])
   zip_obj = find_zip(msg)
-
-  skel_dir = os.path.join(SKEL_DIR, tp_id)
-  skel_files = set()
+  skel_dir = SKEL_DIR / tp_id
 
   # Lanzar ya el proceso worker para poder pasar su stdin a tarfile.open().
   worker = subprocess.Popen([WORKER_BIN],
@@ -123,46 +127,36 @@ def procesar_entrega(msg):
   tar = tarfile.open(fileobj=worker.stdin, mode="w|", dereference=True)
 
   # Añadir al archivo TAR la base del TP (skel_dir).
-  for path, _, filenames in os.walk(skel_dir):
-    for fname in filenames:
-      full_path = os.path.join(path, fname)
-      arch_path = os.path.relpath(full_path, skel_dir)
-      skel_files.add(arch_path)
-      tar.add(full_path, arch_path)
+  for entry in os.scandir(skel_dir):
+    if entry.is_file():
+      path = pathlib.PurePath(entry.path)
+      rel_path = path.relative_to(skel_dir)
+      tar.add(path, "skel" / rel_path)
 
   moss = Moss(DATA_DIR, tp_id, padron)
 
   # A continuación añadir los archivos de la entrega (ZIP).
   for path, zip_info in zip_walk(zip_obj):
-    info = tarfile.TarInfo(path)
+    info = tarfile.TarInfo(("orig" / path).as_posix())
     info.size = zip_info.file_size
     info.mtime = zip_datetime(zip_info).timestamp()
+    info.type, info.mode = tarfile.REGTYPE, 0o644
 
-    if path.endswith("/"):
-      info.type, info.mode = tarfile.DIRTYPE, 0o755
-    else:
-      info.type, info.mode = tarfile.REGTYPE, 0o644
-      # FIXME: skip skel_files here too?
-      moss.save_data(path, zip_obj.open(zip_info.filename))
-
-    if path in skel_files:
-      continue
-    if path in {"makefile", "GNUmakefile"}:
-      raise ErrorAlumno(
-          "archivo ‘{}’ no aceptado; solo ‘Makefile’".format(path))
-
+    moss.save_data(path, zip_obj.read(zip_info))
     tar.addfile(info, zip_obj.open(zip_info.filename))
 
   moss.flush()
   tar.close()
 
   stdout, _ = worker.communicate()
-  output = stdout.decode("utf-8", errors="replace")
+  output = stdout.decode("utf-8")
   retcode = worker.wait()
 
-  send_reply(msg, "{}\n\n{}\n{}".format(
-    "Todo OK" if retcode == 0 else "ERROR", output,
-    "URL de esta entrega (para uso docente):\n" + moss.url()))
+  if retcode == 0:
+    send_reply(msg, output +
+               "URL de esta entrega (para uso docente):\n" + moss.url())
+  else:
+    raise ErrorInterno(output)
 
 
 def guess_tp(subject):
@@ -170,8 +164,8 @@ def guess_tp(subject):
 
   Por ejemplo, ‘tp0’ o ‘pila’.
   """
-  candidates = {x.lower(): x for x in os.listdir(SKEL_DIR)}
-  subj_words = [x.lower() for x in re.split(r"[^_\w]+", subject)]
+  subj_words = [w.lower() for w in re.split(r"[^_\w]+", subject)]
+  candidates = {p.name.lower(): p.name for p in SKEL_DIR.iterdir()}
 
   for word in subj_words:
     if word in candidates:
@@ -241,6 +235,12 @@ def find_zip(msg):
   raise ErrorAlumno("no se encontró un archivo ZIP en el mensaje")
 
 
+def is_forbidden(path):
+  return (path.is_absolute() or
+          ".." in path.parts or
+          path.suffix in FORBIDDEN_EXTENSIONS)
+
+
 def zip_walk(zip_obj, strip_toplevel=True):
   """Itera sobre los archivos de un zip.
 
@@ -252,63 +252,61 @@ def zip_walk(zip_obj, strip_toplevel=True):
   Yields:
     - tuplas (nombre_archivo, zipinfo_object).
   """
-  zip_files = zip_obj.namelist()
-  strip_len = 0
+  zip_files = [pathlib.PurePath(f) for f in zip_obj.namelist()]
+  forbidden_files = [f for f in zip_files if is_forbidden(f)]
+  all_parents = set()
+  common_parent = pathlib.PurePath(".")
 
   if not zip_files:
     raise ErrorAlumno("archivo ZIP vacío")
 
+  if forbidden_files:
+    raise ErrorAlumno("no se permiten archivos con estas extensiones:\n\n  • " +
+                      "\n  • ".join(f.name for f in forbidden_files))
+
+  for path in zip_files:
+    all_parents.update(path.parents)
+
   if strip_toplevel and len(zip_files) > 1:
-    # Comprobar si los contenidos del ZIP están todos en un mismo directorio. Si
-    # lo están, el candidato a prefijo es siempre el elemento de menor longitud.
-    # Suele ser zip_files[0], pero no siempre, de ahí el uso de min(). Además, a
-    # veces termina en barra, a veces no (de ahí el uso de rstrip()).
-    candidate = min(zip_files, key=len)
-    toplevel_pfx = candidate.rstrip("/") + "/"
-    if all(x.startswith(toplevel_pfx)
-           for x in zip_files if x != candidate):
-      zip_files.remove(candidate)
-      strip_len = len(toplevel_pfx)
+    parents = {p.parts[0] for p in zip_files}
+    if len(parents) == 1:
+      common_parent = parents.pop()
 
   for fname in zip_files:
-    arch_name = fname[strip_len:]
-    if os.path.normpath(arch_name).startswith(("/", "../")):
-      raise ErrorAlumno("ruta no aceptada: {}".format(fname))
-    else:
-      yield arch_name, zip_obj.getinfo(fname)
+    if fname not in all_parents:
+      yield (fname.relative_to(common_parent),
+             zip_obj.getinfo(fname.as_posix()))
 
 
 class Moss:
   """Guarda código fuente del alumno.
   """
-  def __init__(self, directory, tp_id, padron):
-    self._dest = os.path.join(directory, tp_id, id_cursada(), padron)
+  def __init__(self, pathobj, tp_id, padron):
+    self._dest = pathobj / tp_id / id_cursada() / padron
     self._padron = padron
-    os.makedirs(self._dest, 0o755, exist_ok=True)
+    shutil.rmtree(self._dest, ignore_errors=True)
+    self._dest.mkdir(parents=True)
 
   def url(self):
     short_rev = "git show -s --pretty=tformat:%h"
     relative_dir = "git rev-parse --show-prefix"
-    return subprocess.check_output('echo "{}/tree/$({})/$({})"'.format(
-        GITHUB_URL, short_rev, relative_dir),
-        shell=True, cwd=self._dest).decode("utf-8", "replace")
+    return subprocess.check_output(
+        f'echo "{GITHUB_URL}/tree/$({short_rev})/$({relative_dir})"',
+        shell=True, encoding="utf-8", cwd=self._dest)
 
-  def save_data(self, filename, fileobj):
+  def save_data(self, filename, contents):
     """Guarda un archivo si es código fuente.
 
     Devuelve True si se guardó, False si se decidió no guardarlo.
     """
-    basename = filename.replace("/", "_")
-
-    with open(os.path.join(self._dest, basename), "wb") as dest:
-      shutil.copyfileobj(fileobj, dest)
-
-    return self._git(["add", basename]) == 0
+    path = self._dest / filename.name
+    path.write_bytes(contents)
+    return self._git(["add", path.name]) == 0
 
   def flush(self):
     """Termina de guardar los archivos en el repositorio.
     """
-    self._git(["add", "--no-all", "."])
+    self._git(["add", "--no-ignore-removal", "."])
     self._git(["commit", "-m", "New upload {}".format(self._padron)])
     self._git(["push", "--force-with-lease", "origin", ":"])
 
