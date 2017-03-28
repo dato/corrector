@@ -55,11 +55,16 @@ class CorregirV2:
 
     self.cwd = skel
 
-  def run(self):
-    cmd = subprocess.run(["make"], cwd=self.cwd, stdin=subprocess.DEVNULL,
-                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+  def run(self, timeout):
+    err = "ERROR"
+    try:
+      cmd = subprocess.run(["make"], cwd=self.cwd, timeout=timeout,
+                           stdin=subprocess.DEVNULL,
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except subprocess.TimeoutExpired as ex:
+      err = f"ERROR: El proceso tardó más de {timeout} segundos"
 
-    print("Todo OK" if cmd.returncode == 0 else "ERROR",
+    print("Todo OK" if cmd.returncode == 0 else err,
           cmd.stdout.decode("utf-8", "replace"), sep="\n\n", end="")
 
 
@@ -79,11 +84,12 @@ def ejecutar(corrector, timeout):
     with tarfile.open(fileobj=sys.stdin.buffer, mode="r|") as tar:
       tar.extractall(tmpdir)
 
-    # TODO: XXX use subprocess's own timeout param
-    signal.alarm(timeout)
+    signal.alarm(int(timeout * 1.5))
     try:
-      corrector(tmpdir).run()
+      corrector(tmpdir).run(timeout)
     except Timeout:
+      # Cada corrector debería comprobar el tiempo, pero este es un error
+      # genérico de última instancia.
       raise ErrorAlumno("El proceso tardó más de {} segundos".format(timeout))
     finally:
       signal.alarm(0)

@@ -14,7 +14,7 @@ ResultTuple = collections.namedtuple("ResultTuple", "succ, log")
 class CorregirJava:
   """Compila y corrige una entrega.
   """
-  def __init__(self, directory, timeout=None):
+  def __init__(self, directory):
     self.path = pathlib.Path(directory)
     alu = self.path / "orig"
     pub = self.path / "skel"
@@ -37,7 +37,7 @@ class CorregirJava:
 
     shutil.copy(pub / "build.xml", self.path)
 
-  def run(self):
+  def run(self, timeout):
     steps = ["compilar", "validar_api", "pruebas_basicas"]
     outcomes = {step: None for step in steps}
     final_result = {"steps": outcomes, "reject": False}
@@ -45,7 +45,8 @@ class CorregirJava:
     try:
       for step in steps:
         silence = [] if step == "pruebas_basicas" else ["-q", "-S"]
-        cmd = subprocess.run(["ant", step] + silence, cwd=self.path,
+        cmd = subprocess.run(["ant", step] + silence,
+                             cwd=self.path, timeout=timeout,
                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         success = (cmd.returncode == 0)
         outcomes[step] = ResultTuple(success,
@@ -53,6 +54,11 @@ class CorregirJava:
         if step in ("compilar", "validar_api") and not success:
           final_result["reject"] = True
           break
+    except subprocess.TimeoutExpired as ex:
+      msg = f"\n=== El proceso tardó más de {timeout} segundos ===\n\n"
+      outcomes[step] = ResultTuple(False, msg +
+                                   ex.stdout.decode("utf-8", "replace"))
+      final_result["reject"] = True
     finally:
       jinja = jinja2.Environment(line_statement_prefix="#",
                                  line_comment_prefix="--",
