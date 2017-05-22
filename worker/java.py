@@ -19,11 +19,21 @@ class CorregirJava:
     alu = self.path / "orig"
     pub = self.path / "skel"
     corr = self.path / "corr"
-    corr.mkdir()
 
-    for path in alu, pub:
-      for file in path.glob("**/*.java"):
-        shutil.copy(file, corr)
+    corr.mkdir()
+    seen_alu = set()
+
+    for file in alu.glob("**/*.java"):
+      shutil.copy(file, corr)
+      seen_alu.add(file.name)
+
+    # Sobrescribir skel para la corrección y, si hace falta, añadir
+    # en "alu" dependencias para la compilación.
+    for file in pub.glob("**/*.java"):
+      shutil.copy(file, corr)
+      if (file.name not in seen_alu and
+          not file.name.startswith("Test")):  # XXX Hackish.
+        shutil.copy(file, alu)
 
     shutil.copy(pub / "build.xml", self.path)
 
