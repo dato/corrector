@@ -133,7 +133,7 @@ def procesar_entrega(msg):
       rel_path = path.relative_to(skel_dir)
       tar.add(path, "skel" / rel_path)
 
-  moss = Moss(DATA_DIR, tp_id, padron)
+  moss = Moss(DATA_DIR, tp_id, padron, msg["Date"])
 
   # A continuación añadir los archivos de la entrega (ZIP).
   for path, zip_info in zip_walk(zip_obj):
@@ -286,11 +286,12 @@ def zip_walk(zip_obj, strip_toplevel=True):
 class Moss:
   """Guarda código fuente del alumno.
   """
-  def __init__(self, pathobj, tp_id, padron):
+  def __init__(self, pathobj, tp_id, padron, subj_date):
     self._dest = pathobj / tp_id / id_cursada() / padron
-    self._padron = padron
     shutil.rmtree(self._dest, ignore_errors=True)
     self._dest.mkdir(parents=True)
+    self._date = subj_date  # XXX(dato): verify RFC822
+    self._commit_message = f"New {tp_id} upload from {padron}"
 
   def url(self):
     short_rev = "git show -s --pretty=tformat:%h"
@@ -312,7 +313,7 @@ class Moss:
     """Termina de guardar los archivos en el repositorio.
     """
     self._git(["add", "--no-ignore-removal", "."])
-    self._git(["commit", "-m", "New upload {}".format(self._padron)])
+    self._git(["commit", "-m", self._commit_message, "--date", self._date])
     self._git(["push", "--force-with-lease", "origin", ":"])
 
   def _git(self, args):
