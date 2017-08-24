@@ -186,7 +186,7 @@ def get_padron_str(subject):
   if matches:
     return "_".join(sorted(matches))
 
-  raise ErrorAlumno("no se encontró el número de padrón en el asunto")
+  raise ErrorAlumno("no se encontró número de legajo en el asunto")
 
 
 def id_cursada():
