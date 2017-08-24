@@ -50,7 +50,7 @@ class CorregirJava:
         success = (cmd.returncode == 0)
         outcomes[step] = ResultTuple(success,
                                      cmd.stdout.decode("utf-8", "replace"))
-        if not success:
+        if step in ("compilar", "validar_api") and not success:
           final_result["reject"] = True
           break
     finally:
