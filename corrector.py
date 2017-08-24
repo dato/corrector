@@ -274,8 +274,13 @@ def zip_walk(zip_obj, strip_toplevel=True):
 
   for fname in zip_files:
     if fname not in all_parents:
-      yield (fname.relative_to(common_parent),
-             zip_obj.getinfo(fname.as_posix()))
+      try:
+        inf = zip_obj.getinfo(fname.as_posix())
+      except KeyError:
+        pass
+      else:
+        yield (fname.relative_to(common_parent),
+               zip_obj.getinfo(fname.as_posix()))
 
 
 class Moss:
