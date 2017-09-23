@@ -8,7 +8,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef DOCKER_IMAGE
 #define DOCKER_IMAGE "algoritmosrw/corrector"
+#endif
+
 #define MEM_LIM "512m"
 
 /* El wrapper pasa los argumentos que recibe al worker. Por eso esta lista
