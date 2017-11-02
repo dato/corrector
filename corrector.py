@@ -128,10 +128,9 @@ def procesar_entrega(msg):
 
   # Añadir al archivo TAR la base del TP (skel_dir).
   for entry in os.scandir(skel_dir):
-    if entry.is_file():
-      path = pathlib.PurePath(entry.path)
-      rel_path = path.relative_to(skel_dir)
-      tar.add(path, "skel" / rel_path)
+    path = pathlib.PurePath(entry.path)
+    rel_path = path.relative_to(skel_dir)
+    tar.add(path, "skel" / rel_path)
 
   moss = Moss(DATA_DIR, tp_id, padron, msg["Date"])
 
