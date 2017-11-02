@@ -48,8 +48,10 @@ class CorregirV2:
       name = badmake.pop()
       raise ErrorAlumno(f"archivo ‘{name}’ no aceptado; solo ‘Makefile’")
 
-    for file in set(orig.iterdir()).difference(skel.iterdir()):
-      file.rename(skel / file.name)
+    for file in orig.iterdir():
+      dest = skel / file.name
+      if not dest.exists():
+        file.rename(dest)
 
     self.cwd = skel
 
