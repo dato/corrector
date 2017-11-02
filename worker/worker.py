@@ -51,7 +51,7 @@ class CorregirV2:
     for file in set(orig.iterdir()).difference(skel.iterdir()):
       file.rename(skel / file.name)
 
-    self.cwd = orig
+    self.cwd = skel
 
   def run(self):
     cmd = subprocess.run(["make"], cwd=self.cwd, stdin=subprocess.DEVNULL,
