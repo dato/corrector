@@ -1,5 +1,5 @@
 {# TODO: Añadir si fuera de plazo. -#}
-Entrega {{- " NO " if reject else " " -}} aceptada
+Entrega {{- " NO " if reject else " " -}} aceptada {{- " (con errores)" if steps.pruebas_basicas and not steps.pruebas_basicas.0 }}
 
 Resumen:
 
