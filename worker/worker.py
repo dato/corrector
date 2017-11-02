@@ -20,7 +20,6 @@ El script:
 
 import argparse
 import pathlib
-import shutil
 import signal
 import subprocess
 import sys
@@ -43,16 +42,14 @@ class CorregirV2:
     path = pathlib.Path(path)
     orig = path / "orig"
     skel = path / "skel"
-
     badmake = {"makefile", "GNUmakefile"}.intersection(orig.iterdir())
 
     if badmake:
       name = badmake.pop()
       raise ErrorAlumno(f"archivo ‘{name}’ no aceptado; solo ‘Makefile’")
 
-    if skel.is_dir():
-      for file in skel.iterdir():
-        shutil.copy2(file, orig)
+    for file in set(orig.iterdir()).difference(skel.iterdir()):
+      file.rename(skel / file.name)
 
     self.cwd = orig
 
