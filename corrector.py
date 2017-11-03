@@ -151,8 +151,8 @@ def procesar_entrega(msg):
   retcode = worker.wait()
 
   if retcode == 0:
-    send_reply(msg, output +
-               "URL de esta entrega (para uso docente):\n" + moss.url())
+    send_reply(msg, output + "\n\n" +
+               "-- \nURL de esta entrega (para uso docente):\n" + moss.url())
   else:
     raise ErrorInterno(output)
 
