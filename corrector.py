@@ -277,8 +277,7 @@ def zip_walk(zip_obj, strip_toplevel=True):
       except KeyError:
         pass
       else:
-        yield (fname.relative_to(common_parent),
-               zip_obj.getinfo(fname.as_posix()))
+        yield (fname.relative_to(common_parent), inf)
 
 
 class Moss:
