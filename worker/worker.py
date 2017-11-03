@@ -20,6 +20,7 @@ El script:
 
 import argparse
 import pathlib
+import os
 import signal
 import subprocess
 import sys
@@ -30,6 +31,18 @@ from java import CorregirJava
 
 class ErrorAlumno(Exception):
   pass
+
+
+class ProcessGroup(subprocess.Popen):
+  """Creates processes in a new session, and sends signals to it.
+  """
+  def __init__(self, *args, **kwargs):
+    kwargs["start_new_session"] = True
+    super().__init__(*args, **kwargs)
+
+  def send_signal(self, sig):
+    pgid = os.getpgid(self.pid)
+    os.killpg(pgid, sig)
 
 
 class CorregirV2:
@@ -56,16 +69,18 @@ class CorregirV2:
     self.cwd = skel
 
   def run(self, timeout):
-    err = "ERROR"
+    msg = "ERROR"
+    cmd = ProcessGroup(["make"], cwd=self.cwd, stdin=subprocess.DEVNULL,
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     try:
-      cmd = subprocess.run(["make"], cwd=self.cwd, timeout=timeout,
-                           stdin=subprocess.DEVNULL,
-                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    except subprocess.TimeoutExpired as ex:
-      err = f"ERROR: El proceso tardó más de {timeout} segundos"
+      output, _ = cmd.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+      cmd.kill()  # Will cleanup all children thanks to ProcessGroup above.
+      msg = f"ERROR: El proceso tardó más de {timeout} segundos"
+      output, _ = cmd.communicate()
 
-    print("Todo OK" if cmd.returncode == 0 else err,
-          cmd.stdout.decode("utf-8", "replace"), sep="\n\n", end="")
+    print("Todo OK" if cmd.returncode == 0 else msg,
+          output.decode("utf-8", "replace"), sep="\n\n", end="")
 
 
 CORRECTORES = {
