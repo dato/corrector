@@ -34,7 +34,6 @@ import email.message
 import email.policy
 import email.utils
 import io
-import mimetypes
 import os
 import pathlib
 import re
