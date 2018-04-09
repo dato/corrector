@@ -55,7 +55,8 @@ class CorregirV2:
     path = pathlib.Path(path)
     orig = path / "orig"
     skel = path / "skel"
-    badmake = {"makefile", "GNUmakefile"}.intersection(orig.iterdir())
+    badmake = {"makefile", "GNUmakefile"}.intersection(
+        p.name for p in orig.iterdir())
 
     if badmake:
       name = badmake.pop()
