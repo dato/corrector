@@ -71,7 +71,7 @@ class CorregirV2:
 
   def run(self, timeout):
     msg = "ERROR"
-    cmd = ProcessGroup(["make -k"], cwd=self.cwd, stdin=subprocess.DEVNULL,
+    cmd = ProcessGroup(["make", "-k"], cwd=self.cwd, stdin=subprocess.DEVNULL,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     try:
       output, _ = cmd.communicate(timeout=timeout)
