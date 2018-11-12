@@ -32,3 +32,17 @@ Es un script en bash (`ojo_bionico.sh`) que invoca el script de [MOSS](https://t
 
     Todos estos parámetros son configurables desde el archivo `corrector.env`.
 
+## Actualización de imagen de Docker
+
+Para que los cambios realizados al worker tomen efecto, se debe actualizar la imagen local de Docker que utilizamos: 
+
+  1. Pushear al repo los cambios realizados al worker.
+
+  2. Correr `sudo docker pull algoritmosrw/corrector`. Comprobar que se actualizó la imagen en https://hub.docker.com/r/algoritmosrw/corrector/
+
+
+En caso de querer recompilar la imagen manualmente:
+
+  1. `cd repo/worker`.
+
+  2. `docker build -t algoritmosrw/corrector .`.
