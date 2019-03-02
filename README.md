@@ -36,7 +36,7 @@ Es un script en bash (`ojo_bionico.sh`) que invoca el script de [MOSS](https://t
 
 Para que los cambios realizados al worker tomen efecto, se debe actualizar la imagen local de Docker que utilizamos: 
 
-  1. Pushear al repo los cambios realizados al worker.
+  1. Pushear al repo los cambios realizados al worker (deben estar en la rama master).
 
   2. Correr `sudo docker pull algoritmosrw/corrector`. Comprobar que se actualizó la imagen en https://hub.docker.com/r/algoritmosrw/corrector/
 

@@ -1,6 +1,6 @@
 # -*- docker-image-name: "algoritmosrw/corrector" -*-
 
-FROM ubuntu:artful
+FROM ubuntu:bionic
 
 RUN apt-get update     && \
     apt-get upgrade -y && \
