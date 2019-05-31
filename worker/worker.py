@@ -77,7 +77,10 @@ class CorregirV2:
       output, _ = cmd.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
       cmd.kill()  # Will cleanup all children thanks to ProcessGroup above.
-      msg = f"ERROR: El proceso tardó más de {timeout} segundos"
+      msg = ("ERROR\n\n"
+             "La última prueba mostrada tardó demasiado y no finalizó en el\n"
+             "espacio de {} segundos; ya no se ejecutó el resto de pruebas."
+             .format(timeout))
       output, _ = cmd.communicate()
 
     print("Todo OK" if cmd.returncode == 0 else msg,
