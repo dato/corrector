@@ -72,7 +72,7 @@ IGNORE_ADDRESSES = {
 
 # Archivos que no aceptamos en las entregas.
 FORBIDDEN_EXTENSIONS = {
-    ".o", ".class", ".jar",
+    ".o", ".class", ".jar", ".pyc",
 }
 
 
