@@ -297,14 +297,15 @@ class Moss:
         f'echo "{GITHUB_URL}/tree/$({short_rev})/$({relative_dir})"',
         shell=True, encoding="utf-8", cwd=self._dest)
 
-  def save_data(self, filename, contents):
+  def save_data(self, relpath, contents):
     """Guarda un archivo si es código fuente.
 
     Devuelve True si se guardó, False si se decidió no guardarlo.
     """
-    path = self._dest / filename.name
+    path = self._dest / relpath
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(contents)
-    return self._git(["add", path.name]) == 0
+    return self._git(["add", relpath]) == 0
 
   def flush(self):
     """Termina de guardar los archivos en el repositorio.
