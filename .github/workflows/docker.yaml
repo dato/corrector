@@ -1,0 +1,25 @@
+name: docker
+on:
+  push:
+    paths:
+      - Dockerfile
+      - packages.txt
+      - .github/workflows/docker.yaml
+    branches: [v3]
+  pull_request:
+    branches: [v3]
+jobs:
+  docker:
+    name: Imagen Docker del worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Construir y publicar imagen
+        uses: docker/build-push-action@v1
+        with:
+          repository: algoritmosrw/corrector
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tag_with_ref: true  # Publica imagen como algoritmosrw/corrector:v3
+          add_git_labels: true
+          push: ${{ github.event_name == 'push' }}

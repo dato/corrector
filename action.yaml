@@ -1,0 +1,17 @@
+name: Corrector para algo2_skel
+description: Corre las pruebas automáticas en la imagen Docker del corrector
+author: dato
+runs:
+  using: docker
+  image: docker://algoritmosrw/corrector:v3
+  args:
+    - ${{ inputs.command }}
+inputs:
+  path:
+    required: false
+    description: Ruta del directorio a corregir
+    default: '.'
+  command:
+    required: false
+    description: Comando a correr en el directorio
+    default: 'make -k -C $INPUT_PATH'

@@ -1,0 +1,26 @@
+# Algo2
+gcc
+g++
+make
+time
+clang
+gcovr
+valgrind
+libgtest-dev
+
+lua5.3
+python3
+openjdk-11-jdk-headless
+
+# Orga
+perl
+rustc
+cargo
+wspanish
+gcc-multilib
+
+# Other
+git
+unzip
+clang-format
+python3-yaml
