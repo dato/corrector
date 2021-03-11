@@ -1,6 +1,8 @@
 FROM ubuntu:focal
 
 ADD packages.txt /tmp
+ADD nodejs.list /etc/apt/sources.list.d
+ADD nodesource.gpg.asc /etc/apt/trusted.gpg.d
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && grep '^[^ #]' /tmp/packages.txt        | \
